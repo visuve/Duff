@@ -27,7 +27,9 @@ MainWindow::MainWindow(QWidget *parent) :
         if (dialog.exec() == QFileDialog::Accepted)
         {
             ui->treeWidgetSummary->clear();
-            populateFileList(dialog.selectedFiles().at(0));
+            const QString directory = dialog.selectedFiles().at(0);
+            qDebug() << "User selected: " << directory;
+            populateFileList(directory);
         }
     });
 
@@ -105,6 +107,8 @@ void MainWindow::populateFileList(const QString& directory)
 
 void MainWindow::populateTree(const HashToFilePaths& data)
 {
+    qDebug() << "Populating tree...";
+
     for (const auto& [hash, paths] : data)
     {
         if (paths.size() <= 1)
@@ -147,6 +151,7 @@ void MainWindow::createFileContextMenu(const QPoint& pos)
 
     if (!selection)
     {
+        qDebug() << "Invalid selection";
         return;
     }
 
@@ -154,6 +159,7 @@ void MainWindow::createFileContextMenu(const QPoint& pos)
 
     if (filePath.isEmpty())
     {
+        qDebug() << "File path is empty / no file selected";
         return;
     }
 

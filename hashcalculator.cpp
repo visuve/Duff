@@ -13,15 +13,18 @@ HashCalculator::HashCalculator(QObject* parent, const QString &directory, QCrypt
     connect(this, &QThread::terminate, [this]()
     {
         _keepRunning = false;
+        qDebug() << "Terminate requested";
     });
 
-    qRegisterMetaType<HashToFilePaths>("LOL");
+    qRegisterMetaType<HashToFilePaths>();
 }
 
 HashCalculator::~HashCalculator()
 {
+    qDebug() << "Destroying...";
     _keepRunning = false;
     this->wait();
+    qDebug() << "Destroyed.";
 }
 
 void HashCalculator::run()
@@ -29,7 +32,7 @@ void HashCalculator::run()
     QDirIterator it(_directory, QDir::Files, QDirIterator::Subdirectories);
     HashToFilePaths fileHashes;
 
-    while (it.hasNext() && _keepRunning)
+    while (_keepRunning && it.hasNext())
     {
         const QString path = it.next();
         QFile file(path);
@@ -44,12 +47,15 @@ void HashCalculator::run()
 
         QCryptographicHash hash(_algorithm);
 
-        if (hash.addData(&file))
+        if (!hash.addData(&file))
         {
-            const QString hashString = hash.result().toHex();
-            fileHashes[hashString].append(path);
-            emit processed(path, hashString);
+            qWarning() << "Failed to process: " << path;
+            continue;
         }
+
+        const QString hashString = hash.result().toHex();
+        fileHashes[hashString].append(path);
+        emit processed(path, hashString);
     }
 
     emit completed(fileHashes);
