@@ -23,6 +23,7 @@ MainWindow::MainWindow(QWidget *parent) :
 
         if (dialog.exec() == QFileDialog::Accepted)
         {
+            ui->treeWidgetSummary->clear();
             populateFileList(dialog.selectedFiles().at(0));
         }
     });
@@ -63,6 +64,7 @@ MainWindow::~MainWindow()
 void MainWindow::populateFileList(const QString& directory)
 {
     QDirIterator it(directory, QDir::Files, QDirIterator::Subdirectories);
+    std::map<QString, QStringList> fileHashes;
 
     while (it.hasNext())
     {
@@ -79,13 +81,13 @@ void MainWindow::populateFileList(const QString& directory)
 
         if (hash.addData(&file))
         {
-            m_fileHashes[hash.result().toHex()].append(path);
+            fileHashes[hash.result().toHex()].append(path);
         }
     }
 
     ui->treeWidgetSummary->clear();
 
-    for (const auto& [hash, paths] : m_fileHashes)
+    for (const auto& [hash, paths] : fileHashes)
     {
         if (paths.size() > 1)
         {

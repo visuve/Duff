@@ -17,6 +17,4 @@ public:
 private:
     Ui::MainWindow* ui;
     void populateFileList(const QString& directory);
-
-    std::map<QString, QStringList> m_fileHashes;
 };
