@@ -1,7 +1,9 @@
 #include "mainwindow.h"
 
 #include <QApplication>
+#include <QDebug>
 #include <QTime>
+#include <QScreen>
 
 #include <iostream>
 
@@ -71,6 +73,20 @@ int main(int argc, char *argv[])
 
     QApplication a(argc, argv);
     MainWindow w;
+
+    const QScreen* screen = QGuiApplication::primaryScreen();
+
+    if (!screen)
+    {
+        qWarning() << "Failed to detect primary screen!";
+    }
+    else
+    {
+        QRect screenGeometry = screen->geometry();
+        w.resize(screenGeometry.width() / 2, screenGeometry.height() / 2);
+    }
+
     w.show();
+
     return a.exec();
 }
