@@ -82,7 +82,6 @@ void MainWindow::populateFileList(const QString& directory)
 {
     QDirIterator it(directory, QDir::Files, QDirIterator::Subdirectories);
     std::map<QString, QStringList> fileHashes;
-    QCryptographicHash hash(_algorithm);
 
     while (it.hasNext())
     {
@@ -97,6 +96,8 @@ void MainWindow::populateFileList(const QString& directory)
 
         ui->statusBar->showMessage(QTime::currentTime().toString() + " Processing: " + path);
         qApp->processEvents(QEventLoop::AllEvents);
+
+        QCryptographicHash hash(_algorithm);
 
         if (hash.addData(&file))
         {
