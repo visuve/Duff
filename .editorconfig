@@ -1,0 +1,6 @@
+root = true
+
+[*.{c,cpp,cxx,h,hpp,hxx,ipp,pro,pri,qrc,ui,md}]
+indent_style = space
+charset = utf-8
+end_of_line = lf
