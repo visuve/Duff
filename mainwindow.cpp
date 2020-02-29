@@ -82,6 +82,7 @@ void MainWindow::populateFileList(const QString& directory)
 {
     QDirIterator it(directory, QDir::Files, QDirIterator::Subdirectories);
     std::map<QString, QStringList> fileHashes;
+    ui->menuAlgorithm->setEnabled(false);
 
     while (it.hasNext())
     {
@@ -138,6 +139,7 @@ void MainWindow::populateFileList(const QString& directory)
     }
 
     ui->statusBar->showMessage(QTime::currentTime().toString() + " Finished processing: " + directory, 10000);
+    ui->menuAlgorithm->setEnabled(true);
 }
 
 void MainWindow::createFileContextMenu(const QPoint& pos)
