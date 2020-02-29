@@ -8,6 +8,7 @@
 #include <QDirIterator>
 #include <QCryptographicHash>
 #include <QMessageBox>
+#include <QDesktopServices>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -54,6 +55,9 @@ MainWindow::MainWindow(QWidget *parent) :
     {
         QMessageBox::aboutQt(this);
     });
+
+    ui->treeWidgetSummary->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(ui->treeWidgetSummary, &QTreeWidget::customContextMenuRequested, this, &MainWindow::createFileContextMenu);
 }
 
 MainWindow::~MainWindow()
@@ -110,10 +114,78 @@ void MainWindow::populateFileList(const QString& directory)
         QMessageBox::information(
                     this,
                     "No duplicate files",
-                    "No duplicate files were found in:\n   " + directory);
+                    "No duplicate files were found in:\n\n" + directory + "\n");
     }
     else
     {
         ui->treeWidgetSummary->resizeColumnToContents(0);
     }
+}
+
+void MainWindow::createFileContextMenu(const QPoint& pos)
+{
+    QTreeWidgetItem* selection = ui->treeWidgetSummary->itemAt(pos);
+
+    if (!selection)
+    {
+        return;
+    }
+
+    const QString filePath = selection->text(1);
+
+    if (filePath.isEmpty())
+    {
+        return;
+    }
+
+    auto openParentDir  = new QAction("Open parent directory", this);
+    connect(openParentDir, &QAction::triggered, [=]()
+    {
+        const QFileInfo fileInfo(filePath);
+
+        if (!QDesktopServices::openUrl(fileInfo.dir().path()))
+        {
+            QMessageBox::warning(this, "Failed to open", "Failed to open directory:\n\n" + filePath + "\n");
+        }
+    });
+
+    auto removeFile  = new QAction("Delete file", this);
+    connect(removeFile, &QAction::triggered, [=]()
+    {
+        if (QMessageBox::question(
+                    this,
+                    "Remove file?", "Are you sure you want to remove:\n\n" + filePath + "\n\nThe file will be permanently deleted.\n",
+                    QMessageBox::Yes|QMessageBox::No,
+                    QMessageBox::No) == QMessageBox::Yes)
+        {
+            if (!QFile::remove(filePath))
+            {
+                if (QFile::exists(filePath))
+                {
+                    QMessageBox::warning(this, "Failed to remove file", "Failed to remove:\n\n" + filePath + "\n");
+                    return;
+                }
+
+                QMessageBox::warning(this, "Failed to remove file", filePath + "\n\ndoes not exist anymore!\n");
+            }
+
+            auto parent = selection->parent();
+            parent->removeChild(selection);
+
+            if (parent->childCount() <= 1)
+            {
+                delete parent;
+            }
+
+            if (ui->treeWidgetSummary->topLevelItemCount() <= 0)
+            {
+                QMessageBox::information(this, "No duplicate files", "No duplicate files left!\n");
+            }
+        }
+    });
+
+    QMenu menu(this);
+    menu.addAction(openParentDir);
+    menu.addAction(removeFile);
+    menu.exec(ui->treeWidgetSummary->mapToGlobal(pos));
 }

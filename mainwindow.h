@@ -17,4 +17,5 @@ public:
 private:
     Ui::MainWindow* ui;
     void populateFileList(const QString& directory);
+    void createFileContextMenu(const QPoint& pos);
 };
