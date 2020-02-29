@@ -7,6 +7,7 @@
 #include <QFileDialog>
 #include <QDirIterator>
 #include <QCryptographicHash>
+#include <QMessageBox>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -66,15 +67,35 @@ void MainWindow::populateFileList(const QString& directory)
         }
     }
 
-    QList<QTreeWidgetItem *> items;
+    ui->treeWidgetSummary->clear();
 
-    for (const auto& [key, value] : m_fileHashes)
+    for (const auto& [hash, paths] : m_fileHashes)
     {
-        auto hash = new QTreeWidgetItem(static_cast<QTreeWidget*>(nullptr), { key });
-        hash->addChild(new QTreeWidgetItem(hash, value));
-        items.append(hash);
+        if (paths.size() > 1)
+        {
+            auto hashItem = new QTreeWidgetItem();
+            hashItem->setText(0, hash);
+
+            for (const QString& path : paths)
+            {
+                auto pathItem = new QTreeWidgetItem();
+                pathItem->setText(1, path);
+                hashItem->addChild(pathItem);
+            }
+
+            ui->treeWidgetSummary->insertTopLevelItem(0, hashItem);
+        }
     }
 
-    ui->treeWidgetSummary->insertTopLevelItems(0, items);
-
+    if (ui->treeWidgetSummary->topLevelItemCount() <= 0)
+    {
+        QMessageBox::information(
+                    this,
+                    "No duplicate files",
+                    "No duplicate files were found in:\n   " + directory);
+    }
+    else
+    {
+        ui->treeWidgetSummary->resizeColumnToContents(0);
+    }
 }
