@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QMainWindow>
+#include <QCryptographicHash>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -18,4 +19,6 @@ private:
     Ui::MainWindow* ui;
     void populateFileList(const QString& directory);
     void createFileContextMenu(const QPoint& pos);
+
+    QCryptographicHash::Algorithm _algorithm = QCryptographicHash::Sha256;
 };

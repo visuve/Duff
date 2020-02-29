@@ -6,7 +6,6 @@
 #include <QStringList>
 #include <QFileDialog>
 #include <QDirIterator>
-#include <QCryptographicHash>
 #include <QMessageBox>
 #include <QDesktopServices>
 #include <QTime>
@@ -43,7 +42,7 @@ MainWindow::MainWindow(QWidget *parent) :
         text << "";
         text << "Duff is yet another duplicate file finder.";
         text << "";
-        text << "Duff calculates SHA-256 checksums of files withing given folder."
+        text << "Duff calculates checksums of files withing given folder."
                 "The paths of the files containing a non-unique checksum are displayed in the main view.";
         text << "";
         text << "Duff is OpenSource and written in Qt (C++) see Licenses for more details.";
@@ -59,6 +58,19 @@ MainWindow::MainWindow(QWidget *parent) :
 
     ui->treeWidgetSummary->setContextMenuPolicy(Qt::CustomContextMenu);
     connect(ui->treeWidgetSummary, &QTreeWidget::customContextMenuRequested, this, &MainWindow::createFileContextMenu);
+
+    auto algorithmGroup = new QActionGroup(this);
+    algorithmGroup->addAction(ui->actionMD5);
+    algorithmGroup->addAction(ui->actionSHA_1);
+    algorithmGroup->addAction(ui->actionSHA_256);
+    algorithmGroup->addAction(ui->actionSHA_512);
+    algorithmGroup->setExclusive(true);
+    ui->actionSHA_256->setChecked(true);
+
+    connect(ui->actionMD5, &QAction::triggered, [this]() { _algorithm = QCryptographicHash::Algorithm::Md5; });
+    connect(ui->actionSHA_1, &QAction::triggered, [this]() { _algorithm = QCryptographicHash::Algorithm::Sha1; });
+    connect(ui->actionSHA_256, &QAction::triggered, [this]() { _algorithm = QCryptographicHash::Algorithm::Sha256; });
+    connect(ui->actionSHA_512, &QAction::triggered, [this]() { _algorithm = QCryptographicHash::Algorithm::Sha512; });
 }
 
 MainWindow::~MainWindow()
@@ -70,7 +82,7 @@ void MainWindow::populateFileList(const QString& directory)
 {
     QDirIterator it(directory, QDir::Files, QDirIterator::Subdirectories);
     std::map<QString, QStringList> fileHashes;
-    QCryptographicHash hash(QCryptographicHash::Sha256);
+    QCryptographicHash hash(_algorithm);
 
     while (it.hasNext())
     {
