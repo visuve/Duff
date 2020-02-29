@@ -9,6 +9,7 @@
 #include <QCryptographicHash>
 #include <QMessageBox>
 #include <QDesktopServices>
+#include <QTime>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -69,6 +70,7 @@ void MainWindow::populateFileList(const QString& directory)
 {
     QDirIterator it(directory, QDir::Files, QDirIterator::Subdirectories);
     std::map<QString, QStringList> fileHashes;
+    QCryptographicHash hash(QCryptographicHash::Sha256);
 
     while (it.hasNext())
     {
@@ -81,7 +83,8 @@ void MainWindow::populateFileList(const QString& directory)
             continue;
         }
 
-        QCryptographicHash hash(QCryptographicHash::Sha256);
+        ui->statusBar->showMessage(QTime::currentTime().toString() + " Processing: " + path);
+        qApp->processEvents(QEventLoop::AllEvents);
 
         if (hash.addData(&file))
         {
@@ -120,6 +123,8 @@ void MainWindow::populateFileList(const QString& directory)
     {
         ui->treeWidgetSummary->resizeColumnToContents(0);
     }
+
+    ui->statusBar->showMessage(QTime::currentTime().toString() + " Finished processing: " + directory, 10000);
 }
 
 void MainWindow::createFileContextMenu(const QPoint& pos)
