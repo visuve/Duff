@@ -67,13 +67,21 @@ void duffMessageHandler(QtMsgType type, const QMessageLogContext& context, const
     }
 }
 
-int main(int argc, char *argv[])
+void loadIcon(QApplication& application)
 {
-    qInstallMessageHandler(duffMessageHandler);
+    QPixmap pixmap;
 
-    QApplication a(argc, argv);
-    MainWindow w;
+    if (!pixmap.load(":/duff.png"))
+    {
+        qWarning() << "Failed to load application icon!";
+        return;
+    }
 
+    application.setWindowIcon(pixmap);
+}
+
+void resizeToScreen(MainWindow& window)
+{
     const QScreen* screen = QGuiApplication::primaryScreen();
 
     if (!screen)
@@ -83,10 +91,21 @@ int main(int argc, char *argv[])
     else
     {
         QRect screenGeometry = screen->geometry();
-        w.resize(screenGeometry.width() / 2, screenGeometry.height() / 2);
+        window.resize(screenGeometry.width() / 2, screenGeometry.height() / 2);
     }
+}
 
-    w.show();
+int main(int argc, char *argv[])
+{
+    qInstallMessageHandler(duffMessageHandler);
 
-    return a.exec();
+    QApplication application(argc, argv);
+    MainWindow window;
+
+    loadIcon(application);
+    resizeToScreen(window);
+
+    window.show();
+
+    return application.exec();
 }

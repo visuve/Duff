@@ -27,15 +27,31 @@ MainWindow::MainWindow(QWidget *parent) :
         }
     });
 
-    connect(ui->actionAbout, &QAction::triggered, []()
-    {
-        qDebug() << "TODO!";
-    });
-
     connect(ui->actionExit, &QAction::triggered, []()
     {
         qDebug() << "Bye!";
         qApp->quit();
+    });
+
+    connect(ui->actionAbout, &QAction::triggered, [this]()
+    {
+        QStringList text;
+        text << "Duff - Duplicate File Finder version 0.1.";
+        text << "";
+        text << "Duff is yet another duplicate file finder.";
+        text << "";
+        text << "Duff calculates SHA-256 checksums of files withing given folder."
+                "The paths of the files containing a non-unique checksum are displayed in the main view.";
+        text << "";
+        text << "Duff is OpenSource and written in Qt (C++) see Licenses for more details.";
+        text << "";
+
+        QMessageBox::about(this, "Duff", text.join('\n'));
+    });
+
+    connect(ui->actionLicenses, &QAction::triggered, [this]()
+    {
+        QMessageBox::aboutQt(this);
     });
 }
 
