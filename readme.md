@@ -1,4 +1,4 @@
-# Duff - Duplicate file finder
+# Duff - Duplicate File Finder
 
 - A small utility to find and (optionally) remove duplicate files
 - Written in C++ & Qt

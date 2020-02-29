@@ -2,6 +2,7 @@
 
 #include <QMainWindow>
 #include <QCryptographicHash>
+#include <map>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -17,7 +18,9 @@ public:
 
 private:
     Ui::MainWindow* ui;
+    std::map<QString, QStringList> calculateHashes(const QString& directory, QCryptographicHash::Algorithm algorithm);
     void populateFileList(const QString& directory);
+    void populateTree(const std::map<QString, QStringList>& data);
     void createFileContextMenu(const QPoint& pos);
 
     QCryptographicHash::Algorithm _algorithm = QCryptographicHash::Sha256;

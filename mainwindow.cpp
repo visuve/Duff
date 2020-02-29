@@ -9,6 +9,8 @@
 #include <QMessageBox>
 #include <QDesktopServices>
 #include <QTime>
+#include <QtConcurrent/QtConcurrentRun>
+#include <QFutureWatcher>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -78,15 +80,14 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::populateFileList(const QString& directory)
+std::map<QString, QStringList> MainWindow::calculateHashes(const QString& directory, QCryptographicHash::Algorithm algorithm)
 {
     QDirIterator it(directory, QDir::Files, QDirIterator::Subdirectories);
     std::map<QString, QStringList> fileHashes;
-    ui->menuAlgorithm->setEnabled(false);
 
     while (it.hasNext())
     {
-        QString path = it.next();
+        const QString path = it.next();
         QFile file(path);
 
         if (!file.open(QFile::ReadOnly))
@@ -98,7 +99,7 @@ void MainWindow::populateFileList(const QString& directory)
         ui->statusBar->showMessage(QTime::currentTime().toString() + " Processing: " + path);
         qApp->processEvents(QEventLoop::AllEvents);
 
-        QCryptographicHash hash(_algorithm);
+        QCryptographicHash hash(algorithm);
 
         if (hash.addData(&file))
         {
@@ -106,25 +107,15 @@ void MainWindow::populateFileList(const QString& directory)
         }
     }
 
+    return fileHashes;
+}
+
+void MainWindow::populateFileList(const QString& directory)
+{
     ui->treeWidgetSummary->clear();
+    ui->menuAlgorithm->setEnabled(false);
 
-    for (const auto& [hash, paths] : fileHashes)
-    {
-        if (paths.size() > 1)
-        {
-            auto hashItem = new QTreeWidgetItem();
-            hashItem->setText(0, hash);
-
-            for (const QString& path : paths)
-            {
-                auto pathItem = new QTreeWidgetItem();
-                pathItem->setText(1, path);
-                hashItem->addChild(pathItem);
-            }
-
-            ui->treeWidgetSummary->insertTopLevelItem(0, hashItem);
-        }
-    }
+    populateTree(calculateHashes(directory, _algorithm));
 
     if (ui->treeWidgetSummary->topLevelItemCount() <= 0)
     {
@@ -140,6 +131,29 @@ void MainWindow::populateFileList(const QString& directory)
 
     ui->statusBar->showMessage(QTime::currentTime().toString() + " Finished processing: " + directory, 10000);
     ui->menuAlgorithm->setEnabled(true);
+}
+
+void MainWindow::populateTree(const std::map<QString, QStringList>& data)
+{
+    for (const auto& [hash, paths] : data)
+    {
+        if (paths.size() <= 1)
+        {
+            continue;
+        }
+
+        auto hashItem = new QTreeWidgetItem();
+        hashItem->setText(0, hash);
+
+        for (const QString& path : paths)
+        {
+            auto pathItem = new QTreeWidgetItem();
+            pathItem->setText(1, path);
+            hashItem->addChild(pathItem);
+        }
+
+        ui->treeWidgetSummary->insertTopLevelItem(0, hashItem);
+    }
 }
 
 void MainWindow::createFileContextMenu(const QPoint& pos)
