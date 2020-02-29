@@ -3,10 +3,12 @@ QT += core gui widgets
 CONFIG += c++17
 
 SOURCES += \
+    hashcalculator.cpp \
     main.cpp \
     mainwindow.cpp
 
 HEADERS += \
+    hashcalculator.h \
     mainwindow.h
 
 FORMS += \

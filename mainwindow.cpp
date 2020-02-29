@@ -80,60 +80,30 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-std::map<QString, QStringList> MainWindow::calculateHashes(const QString& directory, QCryptographicHash::Algorithm algorithm)
-{
-    QDirIterator it(directory, QDir::Files, QDirIterator::Subdirectories);
-    std::map<QString, QStringList> fileHashes;
-
-    while (it.hasNext())
-    {
-        const QString path = it.next();
-        QFile file(path);
-
-        if (!file.open(QFile::ReadOnly))
-        {
-            qWarning() << "Failed to open" << path;
-            continue;
-        }
-
-        ui->statusBar->showMessage(QTime::currentTime().toString() + " Processing: " + path);
-        qApp->processEvents(QEventLoop::AllEvents);
-
-        QCryptographicHash hash(algorithm);
-
-        if (hash.addData(&file))
-        {
-            fileHashes[hash.result().toHex()].append(path);
-        }
-    }
-
-    return fileHashes;
-}
-
 void MainWindow::populateFileList(const QString& directory)
 {
     ui->treeWidgetSummary->clear();
     ui->menuAlgorithm->setEnabled(false);
 
-    populateTree(calculateHashes(directory, _algorithm));
+    auto hashCalculator = new HashCalculator(this, directory, _algorithm);
 
-    if (ui->treeWidgetSummary->topLevelItemCount() <= 0)
+    connect(hashCalculator, &HashCalculator::processing, [this](const QString& filePath)
     {
-        QMessageBox::information(
-                    this,
-                    "No duplicate files",
-                    "No duplicate files were found in:\n\n" + directory + "\n");
-    }
-    else
-    {
-        ui->treeWidgetSummary->resizeColumnToContents(0);
-    }
+        ui->statusBar->showMessage(QTime::currentTime().toString() + " Processing: " + filePath);
+    });
 
-    ui->statusBar->showMessage(QTime::currentTime().toString() + " Finished processing: " + directory, 10000);
-    ui->menuAlgorithm->setEnabled(true);
+    connect(hashCalculator, &HashCalculator::processed, [this](const QString& filePath, const QString& hashString)
+    {
+        ui->statusBar->showMessage(QTime::currentTime().toString() + " Processed: " + filePath + " -> " + hashString);
+    });
+
+    connect(hashCalculator, &HashCalculator::completed, this, &MainWindow::populateTree);
+    connect(hashCalculator, &HashCalculator::finished, hashCalculator, &QObject::deleteLater);
+
+    hashCalculator->start();
 }
 
-void MainWindow::populateTree(const std::map<QString, QStringList>& data)
+void MainWindow::populateTree(const HashToFilePaths& data)
 {
     for (const auto& [hash, paths] : data)
     {
@@ -154,6 +124,21 @@ void MainWindow::populateTree(const std::map<QString, QStringList>& data)
 
         ui->treeWidgetSummary->insertTopLevelItem(0, hashItem);
     }
+
+    if (ui->treeWidgetSummary->topLevelItemCount() <= 0)
+    {
+        QMessageBox::information(
+                    this,
+                    "No duplicate files",
+                    "No duplicate files were found.\n");
+    }
+    else
+    {
+        ui->treeWidgetSummary->resizeColumnToContents(0);
+    }
+
+    ui->statusBar->showMessage(QTime::currentTime().toString() + " Finished processing.\n ", 10000);
+    ui->menuAlgorithm->setEnabled(true);
 }
 
 void MainWindow::createFileContextMenu(const QPoint& pos)
