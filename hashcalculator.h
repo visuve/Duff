@@ -3,13 +3,6 @@
 #include <QObject>
 #include <QThread>
 #include <QCryptographicHash>
-#include <QMap>
-#include <QStringList>
-#include <QMetaType>
-#include <atomic>
-
-using HashToFilePaths = std::map<QString, QStringList>;
-Q_DECLARE_METATYPE(HashToFilePaths);
 
 class HashCalculator : public QThread
 {
@@ -21,13 +14,11 @@ public:
 
 signals:
     void processing(const QString& filePath);
-    void processed(const QString& filePath, const QString& hashString);
-    void completed(const HashToFilePaths& fileHashes);
+    void processed(const QString& hashString, const QString& filePath);
 
 private:
     void run() override;
 
     const QString _directory;
     const QCryptographicHash::Algorithm _algorithm;
-    std::atomic<bool> _keepRunning = true;
 };

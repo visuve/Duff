@@ -17,11 +17,13 @@ public:
     MainWindow(QWidget* parent = nullptr);
     ~MainWindow();
 
+private slots:
+    void onProcessed(const QString& hashString, const QString& filePath);
+    void onFinished();
+
 private:
     Ui::MainWindow* ui;
-    void populateFileList(const QString& directory);
-    void populateTree(const HashToFilePaths& data);
-
+    void populateTree(const QString& directory);
     void createFileContextMenu(const QPoint& pos);
 
     QCryptographicHash::Algorithm _algorithm = QCryptographicHash::Sha256;

@@ -3,14 +3,10 @@
 
 #include <QDebug>
 #include <QTreeWidgetItem>
-#include <QStringList>
 #include <QFileDialog>
-#include <QDirIterator>
 #include <QMessageBox>
 #include <QDesktopServices>
 #include <QTime>
-#include <QtConcurrent/QtConcurrentRun>
-#include <QFutureWatcher>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -27,9 +23,9 @@ MainWindow::MainWindow(QWidget *parent) :
         if (dialog.exec() == QFileDialog::Accepted)
         {
             ui->treeWidgetSummary->clear();
-            const QString directory = dialog.selectedFiles().at(0);
+            const QString directory = dialog.selectedFiles().first();
             qDebug() << "User selected: " << directory;
-            populateFileList(directory);
+            populateTree(directory);
         }
     });
 
@@ -82,53 +78,31 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::populateFileList(const QString& directory)
+void MainWindow::onProcessed(const QString& hashString, const QString&filePath)
 {
-    ui->treeWidgetSummary->clear();
-    ui->menuAlgorithm->setEnabled(false);
+    ui->statusBar->showMessage(QTime::currentTime().toString() + " Found duplicate: " + filePath + " -> " + hashString);
 
-    auto hashCalculator = new HashCalculator(this, directory, _algorithm);
+    const QList<QTreeWidgetItem*> hashItems = ui->treeWidgetSummary->findItems(hashString, Qt::MatchFlag::MatchExactly);
 
-    connect(hashCalculator, &HashCalculator::processing, [this](const QString& filePath)
+    if (hashItems.size() > 1)
     {
-        ui->statusBar->showMessage(QTime::currentTime().toString() + " Processing: " + filePath);
-    });
-
-    connect(hashCalculator, &HashCalculator::processed, [this](const QString& filePath, const QString& hashString)
-    {
-        ui->statusBar->showMessage(QTime::currentTime().toString() + " Processed: " + filePath + " -> " + hashString);
-    });
-
-    connect(hashCalculator, &HashCalculator::completed, this, &MainWindow::populateTree);
-    connect(hashCalculator, &HashCalculator::finished, hashCalculator, &QObject::deleteLater);
-
-    hashCalculator->start();
-}
-
-void MainWindow::populateTree(const HashToFilePaths& data)
-{
-    qDebug() << "Populating tree...";
-
-    for (const auto& [hash, paths] : data)
-    {
-        if (paths.size() <= 1)
-        {
-            continue;
-        }
-
-        auto hashItem = new QTreeWidgetItem();
-        hashItem->setText(0, hash);
-
-        for (const QString& path : paths)
-        {
-            auto pathItem = new QTreeWidgetItem();
-            pathItem->setText(1, path);
-            hashItem->addChild(pathItem);
-        }
-
-        ui->treeWidgetSummary->insertTopLevelItem(0, hashItem);
+        qCritical() << "More than one item with the hash '" << hashString << "' found!";
+        return;
     }
 
+    QTreeWidgetItem* hashItem = hashItems.empty() ? new QTreeWidgetItem({hashString}) : hashItems.first();
+    auto pathItem = new QTreeWidgetItem();
+    pathItem->setText(1, filePath);
+    hashItem->addChild(pathItem);
+
+    if (hashItems.empty())
+    {
+        ui->treeWidgetSummary->insertTopLevelItem(0, hashItem);
+    }
+}
+
+void MainWindow::onFinished()
+{
     if (ui->treeWidgetSummary->topLevelItemCount() <= 0)
     {
         QMessageBox::information(
@@ -143,6 +117,23 @@ void MainWindow::populateTree(const HashToFilePaths& data)
 
     ui->statusBar->showMessage(QTime::currentTime().toString() + " Finished processing.\n ", 10000);
     ui->menuAlgorithm->setEnabled(true);
+}
+
+void MainWindow::populateTree(const QString& directory)
+{
+    ui->treeWidgetSummary->clear();
+    ui->menuAlgorithm->setEnabled(false);
+
+    auto hashCalculator = new HashCalculator(this, directory, _algorithm);
+    connect(hashCalculator, &HashCalculator::processing, [this](const QString& filePath)
+    {
+        ui->statusBar->showMessage(QTime::currentTime().toString() + " Processing: " + filePath);
+    });
+
+    connect(hashCalculator, &HashCalculator::processed, this, &MainWindow::onProcessed);
+    connect(hashCalculator, &HashCalculator::finished, this, &MainWindow::onFinished);
+    connect(hashCalculator, &HashCalculator::finished, hashCalculator, &QObject::deleteLater);
+    hashCalculator->start();
 }
 
 void MainWindow::createFileContextMenu(const QPoint& pos)
@@ -190,31 +181,33 @@ void MainWindow::createFileContextMenu(const QPoint& pos)
                     this,
                     "Remove file?", "Are you sure you want to remove:\n\n" + filePath + "\n\nThe file will be permanently deleted.\n",
                     QMessageBox::Yes|QMessageBox::No,
-                    QMessageBox::No) == QMessageBox::Yes)
+                    QMessageBox::No) != QMessageBox::Yes)
         {
-            if (!QFile::remove(filePath))
-            {
-                if (QFile::exists(filePath))
-                {
-                    QMessageBox::warning(this, "Failed to remove file", "Failed to remove:\n\n" + filePath + "\n");
-                    return;
-                }
+            return;
+        }
 
-                QMessageBox::warning(this, "Failed to remove file", filePath + "\n\ndoes not exist anymore!\n");
+        if (!QFile::remove(filePath))
+        {
+            if (QFile::exists(filePath))
+            {
+                QMessageBox::warning(this, "Failed to remove file", "Failed to remove:\n\n" + filePath + "\n");
+                return;
             }
 
-            auto parent = selection->parent();
-            parent->removeChild(selection);
+            QMessageBox::warning(this, "Failed to remove file", filePath + "\n\ndoes not exist anymore!\n");
+        }
 
-            if (parent->childCount() <= 1)
-            {
-                delete parent;
-            }
+        auto parent = selection->parent();
+        parent->removeChild(selection);
 
-            if (ui->treeWidgetSummary->topLevelItemCount() <= 0)
-            {
-                QMessageBox::information(this, "No duplicate files", "No duplicate files left!\n");
-            }
+        if (parent->childCount() <= 1)
+        {
+            delete parent;
+        }
+
+        if (ui->treeWidgetSummary->topLevelItemCount() <= 0)
+        {
+            QMessageBox::information(this, "No duplicate files", "No duplicate files left!\n");
         }
     });
 

@@ -1,38 +1,40 @@
 #include "hashcalculator.h"
 #include <QDir>
 #include <QDirIterator>
-#include <QTime>
 #include <QDebug>
-#include <QCryptographicHash>
+#include <QMap>
+#include <QStringList>
 
 HashCalculator::HashCalculator(QObject* parent, const QString &directory, QCryptographicHash::Algorithm algorithm) :
     QThread(parent),
     _directory(directory),
     _algorithm(algorithm)
 {
-    connect(this, &QThread::terminate, [this]()
+    connect(this, &QThread::terminate, []()
     {
-        _keepRunning = false;
         qDebug() << "Terminate requested";
     });
 
-    qRegisterMetaType<HashToFilePaths>();
+    connect(this, &QThread::quit, []()
+    {
+        qDebug() << "Quit requested";
+    });
 }
 
 HashCalculator::~HashCalculator()
 {
     qDebug() << "Destroying...";
-    _keepRunning = false;
-    this->wait();
+    requestInterruption();
+    wait();
     qDebug() << "Destroyed.";
 }
 
 void HashCalculator::run()
 {
     QDirIterator it(_directory, QDir::Files, QDirIterator::Subdirectories);
-    HashToFilePaths fileHashes;
+    QMap<QString, QStringList> fileHashes;
 
-    while (_keepRunning && it.hasNext())
+    while (!QThread::currentThread()->isInterruptionRequested() && it.hasNext())
     {
         const QString path = it.next();
         QFile file(path);
@@ -55,11 +57,17 @@ void HashCalculator::run()
 
         const QString hashString = hash.result().toHex();
         fileHashes[hashString].append(path);
-        emit processed(path, hashString);
-    }
+        int size = fileHashes[hashString].size();
 
-    if (_keepRunning)
-    {
-        emit completed(fileHashes);
+        if (size == 2)
+        {
+            emit processed(hashString, fileHashes[hashString].first());
+            emit processed(hashString, path);
+        }
+
+        if (size > 2)
+        {
+            emit processed(hashString, path);
+        }
     }
 }
