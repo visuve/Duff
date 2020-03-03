@@ -6,6 +6,7 @@
 #include <QMap>
 #include <QStringList>
 #include <QMetaType>
+#include <atomic>
 
 using HashToFilePaths = std::map<QString, QStringList>;
 Q_DECLARE_METATYPE(HashToFilePaths);
@@ -28,5 +29,5 @@ private:
 
     const QString _directory;
     const QCryptographicHash::Algorithm _algorithm;
-    bool _keepRunning = true;
+    std::atomic<bool> _keepRunning = true;
 };

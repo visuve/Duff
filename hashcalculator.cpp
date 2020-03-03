@@ -58,5 +58,8 @@ void HashCalculator::run()
         emit processed(path, hashString);
     }
 
-    emit completed(fileHashes);
+    if (_keepRunning)
+    {
+        emit completed(fileHashes);
+    }
 }
