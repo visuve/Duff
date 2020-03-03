@@ -163,6 +163,15 @@ void MainWindow::createFileContextMenu(const QPoint& pos)
         return;
     }
 
+    auto openFile  = new QAction("Open file", this);
+    connect(openFile, &QAction::triggered, [=]()
+    {
+        if (!QDesktopServices::openUrl(filePath))
+        {
+            QMessageBox::warning(this, "Failed to open", "Failed to open file:\n\n" + filePath + "\n");
+        }
+    });
+
     auto openParentDir  = new QAction("Open parent directory", this);
     connect(openParentDir, &QAction::triggered, [=]()
     {
@@ -210,6 +219,7 @@ void MainWindow::createFileContextMenu(const QPoint& pos)
     });
 
     QMenu menu(this);
+    menu.addAction(openFile);
     menu.addAction(openParentDir);
     menu.addAction(removeFile);
     menu.exec(ui->treeWidgetSummary->mapToGlobal(pos));
