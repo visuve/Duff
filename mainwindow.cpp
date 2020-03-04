@@ -78,7 +78,7 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
-void MainWindow::onProcessed(const QString& hashString, const QString&filePath)
+void MainWindow::onDuplicateFound(const QString& hashString, const QString& filePath)
 {
     ui->statusBar->showMessage(QTime::currentTime().toString() + " Found duplicate: " + filePath + " -> " + hashString);
 
@@ -130,9 +130,10 @@ void MainWindow::populateTree(const QString& directory)
         ui->statusBar->showMessage(QTime::currentTime().toString() + " Processing: " + filePath);
     });
 
-    connect(hashCalculator, &HashCalculator::processed, this, &MainWindow::onProcessed);
+    connect(hashCalculator, &HashCalculator::duplicateFound, this, &MainWindow::onDuplicateFound);
     connect(hashCalculator, &HashCalculator::finished, this, &MainWindow::onFinished);
     connect(hashCalculator, &HashCalculator::finished, hashCalculator, &QObject::deleteLater);
+
     hashCalculator->start();
 }
 
@@ -154,8 +155,8 @@ void MainWindow::createFileContextMenu(const QPoint& pos)
         return;
     }
 
-    auto openFile  = new QAction("Open file", this);
-    connect(openFile, &QAction::triggered, [=]()
+    auto openFileAction  = new QAction("Open file", this);
+    connect(openFileAction, &QAction::triggered, [=]()
     {
         if (!QDesktopServices::openUrl(filePath))
         {
@@ -163,8 +164,8 @@ void MainWindow::createFileContextMenu(const QPoint& pos)
         }
     });
 
-    auto openParentDir  = new QAction("Open parent directory", this);
-    connect(openParentDir, &QAction::triggered, [=]()
+    auto openParentDirAction  = new QAction("Open parent directory", this);
+    connect(openParentDirAction, &QAction::triggered, [=]()
     {
         const QFileInfo fileInfo(filePath);
 
@@ -174,27 +175,12 @@ void MainWindow::createFileContextMenu(const QPoint& pos)
         }
     });
 
-    auto removeFile  = new QAction("Delete file", this);
-    connect(removeFile, &QAction::triggered, [=]()
+    auto removeFileAction  = new QAction("Delete file", this);
+    connect(removeFileAction, &QAction::triggered, [=]()
     {
-        if (QMessageBox::question(
-                    this,
-                    "Remove file?", "Are you sure you want to remove:\n\n" + filePath + "\n\nThe file will be permanently deleted.\n",
-                    QMessageBox::Yes|QMessageBox::No,
-                    QMessageBox::No) != QMessageBox::Yes)
+        if (!removeFile(filePath))
         {
             return;
-        }
-
-        if (!QFile::remove(filePath))
-        {
-            if (QFile::exists(filePath))
-            {
-                QMessageBox::warning(this, "Failed to remove file", "Failed to remove:\n\n" + filePath + "\n");
-                return;
-            }
-
-            QMessageBox::warning(this, "Failed to remove file", filePath + "\n\ndoes not exist anymore!\n");
         }
 
         auto parent = selection->parent();
@@ -212,8 +198,31 @@ void MainWindow::createFileContextMenu(const QPoint& pos)
     });
 
     QMenu menu(this);
-    menu.addAction(openFile);
-    menu.addAction(openParentDir);
-    menu.addAction(removeFile);
+    menu.addActions({ openFileAction, openParentDirAction, removeFileAction});
     menu.exec(ui->treeWidgetSummary->mapToGlobal(pos));
+}
+
+bool MainWindow::removeFile(const QString &filePath)
+{
+    if (QMessageBox::question(
+                this,
+                "Remove file?", "Are you sure you want to remove:\n\n" + filePath + "\n\nThe file will be permanently deleted.\n",
+                QMessageBox::Yes|QMessageBox::No,
+                QMessageBox::No) != QMessageBox::Yes)
+    {
+        return false;
+    }
+
+    if (!QFile::remove(filePath))
+    {
+        if (QFile::exists(filePath))
+        {
+            QMessageBox::warning(this, "Failed to remove file", "Failed to remove:\n\n" + filePath + "\n");
+            return false;
+        }
+
+        QMessageBox::warning(this, "Failed to remove file", filePath + "\n\ndoes not exist anymore!\n");
+    }
+
+    return true;
 }

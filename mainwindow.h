@@ -18,13 +18,14 @@ public:
     ~MainWindow();
 
 private slots:
-    void onProcessed(const QString& hashString, const QString& filePath);
+    void onDuplicateFound(const QString& hashString, const QString& filePath);
     void onFinished();
 
 private:
     Ui::MainWindow* ui;
     void populateTree(const QString& directory);
     void createFileContextMenu(const QPoint& pos);
+    bool removeFile(const QString& filePath);
 
     QCryptographicHash::Algorithm _algorithm = QCryptographicHash::Sha256;
 };

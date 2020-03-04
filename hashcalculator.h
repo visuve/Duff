@@ -14,7 +14,7 @@ public:
 
 signals:
     void processing(const QString& filePath);
-    void processed(const QString& hashString, const QString& filePath);
+    void duplicateFound(const QString& hashString, const QString& filePath);
 
 private:
     void run() override;

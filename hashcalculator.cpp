@@ -61,13 +61,13 @@ void HashCalculator::run()
 
         if (size == 2)
         {
-            emit processed(hashString, fileHashes[hashString].first());
-            emit processed(hashString, path);
+            emit duplicateFound(hashString, fileHashes[hashString].first());
+            emit duplicateFound(hashString, path);
         }
 
         if (size > 2)
         {
-            emit processed(hashString, path);
+            emit duplicateFound(hashString, path);
         }
     }
 }
