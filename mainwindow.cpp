@@ -7,6 +7,7 @@
 #include <QMessageBox>
 #include <QDesktopServices>
 #include <QTime>
+#include <QMapIterator>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -71,6 +72,52 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->actionSHA_1, &QAction::triggered, [this]() { _algorithm = QCryptographicHash::Algorithm::Sha1; });
     connect(ui->actionSHA_256, &QAction::triggered, [this]() { _algorithm = QCryptographicHash::Algorithm::Sha256; });
     connect(ui->actionSHA_512, &QAction::triggered, [this]() { _algorithm = QCryptographicHash::Algorithm::Sha512; });
+
+    connect(ui->pushButtonDeleteSelected, &QPushButton::clicked,  this, [this]()
+    {
+        QMap<QTreeWidgetItem*, QString> filePaths;
+
+        QTreeWidgetItemIterator it(ui->treeWidgetSummary);
+
+        while (*it)
+        {
+            if ((*it)->checkState(1) == Qt::CheckState::Checked)
+            {
+                filePaths[*it] = (*it)->text(1);
+            }
+
+          ++it;
+        }
+
+        if (filePaths.empty() ||
+                QMessageBox::question(
+                    this,
+                    "Confirm delete?",
+                    "Are you sure you want to delete the following files:\n" + filePaths.values().join('\n')) !=
+                QMessageBox::StandardButton::Yes)
+        {
+            return;
+        }
+
+        for (auto iter = filePaths.constBegin(); iter != filePaths.constEnd(); ++iter)
+        {
+            if (!QFile::remove(iter.value()))
+            {
+                if (QFile::exists(iter.value()))
+                {
+                    QMessageBox::warning(this, "Failed to remove file", "Failed to remove:\n\n" + iter.value() + "\n");
+                    continue;
+                }
+
+                QMessageBox::warning(this, "Failed to remove file", iter.value() + "\n\ndoes not exist anymore!\n");
+
+            }
+            else
+            {
+                delete iter.key();
+            }
+        }
+    });
 }
 
 MainWindow::~MainWindow()
@@ -92,6 +139,7 @@ void MainWindow::onDuplicateFound(const QString& hashString, const QString& file
 
     QTreeWidgetItem* hashItem = hashItems.empty() ? new QTreeWidgetItem({hashString}) : hashItems.first();
     auto pathItem = new QTreeWidgetItem();
+    pathItem->setCheckState(1, Qt::Unchecked);
     pathItem->setText(1, filePath);
     hashItem->addChild(pathItem);
 
