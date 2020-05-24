@@ -110,12 +110,9 @@ MainWindow::MainWindow(QWidget *parent) :
                 }
 
                 QMessageBox::warning(this, "Failed to remove file", iter.value() + "\n\ndoes not exist anymore!\n");
+            }
 
-            }
-            else
-            {
-                delete iter.key();
-            }
+            delete iter.key();
         }
     });
 }
