@@ -36,7 +36,7 @@ void HashCalculator::run()
 
     while (!QThread::currentThread()->isInterruptionRequested() && it.hasNext())
     {
-        const QString path = it.next();
+        const QString path = QDir::toNativeSeparators(it.next());
         QFile file(path);
 
         if (!file.open(QFile::ReadOnly))
