@@ -8,6 +8,7 @@
 #include <QDesktopServices>
 #include <QTime>
 #include <QMapIterator>
+#include <QDir>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -15,46 +16,13 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
-    connect(ui->actionOpen, &QAction::triggered, [this]()
-    {
-        QFileDialog dialog(this);
-        dialog.setFileMode(QFileDialog::Directory);
-        dialog.setOption(QFileDialog::ShowDirsOnly, true);
-
-        if (dialog.exec() == QFileDialog::Accepted)
-        {
-            ui->treeWidgetSummary->clear();
-            const QString directory = dialog.selectedFiles().first();
-            qDebug() << "User selected: " << directory;
-            populateTree(directory);
-        }
-    });
-
-    connect(ui->actionExit, &QAction::triggered, []()
-    {
-        qDebug() << "Bye!";
-        qApp->quit();
-    });
-
-    connect(ui->actionAbout, &QAction::triggered, [this]()
-    {
-        QStringList text;
-        text << "Duff - Duplicate File Finder version 0.1.";
-        text << "";
-        text << "Duff is yet another duplicate file finder.";
-        text << "";
-        text << "Duff calculates checksums of files withing given folder."
-                "The paths of the files containing a non-unique checksum are displayed in the main view.";
-        text << "";
-        text << "Duff is OpenSource and written in Qt (C++) see Licenses for more details.";
-        text << "";
-
-        QMessageBox::about(this, "Duff", text.join('\n'));
-    });
+    connect(ui->actionOpen, &QAction::triggered, this, &MainWindow::onOpenDirectoryDialog);
+    connect(ui->actionExit, &QAction::triggered, qApp, &QApplication::quit);
+    connect(ui->actionAbout, &QAction::triggered, this, &MainWindow::onAbout);
 
     connect(ui->actionLicenses, &QAction::triggered, [this]()
     {
-        QMessageBox::aboutQt(this);
+        QMessageBox::aboutQt(this, "Duff");
     });
 
     ui->treeWidgetSummary->setContextMenuPolicy(Qt::CustomContextMenu);
@@ -73,53 +41,47 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->actionSHA_256, &QAction::triggered, [this]() { _algorithm = QCryptographicHash::Algorithm::Sha256; });
     connect(ui->actionSHA_512, &QAction::triggered, [this]() { _algorithm = QCryptographicHash::Algorithm::Sha512; });
 
-    connect(ui->pushButtonDeleteSelected, &QPushButton::clicked,  this, [this]()
-    {
-        QMap<QTreeWidgetItem*, QString> filePaths;
-
-        QTreeWidgetItemIterator it(ui->treeWidgetSummary);
-
-        while (*it)
-        {
-            if ((*it)->checkState(1) == Qt::CheckState::Checked)
-            {
-                filePaths[*it] = (*it)->text(1);
-            }
-
-          ++it;
-        }
-
-        if (filePaths.empty() ||
-                QMessageBox::question(
-                    this,
-                    "Confirm delete?",
-                    "Are you sure you want to delete the following files:\n" + filePaths.values().join('\n')) !=
-                QMessageBox::StandardButton::Yes)
-        {
-            return;
-        }
-
-        for (auto iter = filePaths.constBegin(); iter != filePaths.constEnd(); ++iter)
-        {
-            if (!QFile::remove(iter.value()))
-            {
-                if (QFile::exists(iter.value()))
-                {
-                    QMessageBox::warning(this, "Failed to remove file", "Failed to remove:\n\n" + iter.value() + "\n");
-                    continue;
-                }
-
-                QMessageBox::warning(this, "Failed to remove file", iter.value() + "\n\ndoes not exist anymore!\n");
-            }
-
-            delete iter.key();
-        }
-    });
+    connect(ui->pushButtonFindDuplicates, &QPushButton::clicked, this, &MainWindow::onFindDuplicates);
+    connect(ui->pushButtonDeleteSelected, &QPushButton::clicked, this, &MainWindow::deleteSelected);
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+void MainWindow::onOpenDirectoryDialog()
+{
+    QFileDialog dialog(this);
+    dialog.setFileMode(QFileDialog::Directory);
+    dialog.setOption(QFileDialog::ShowDirsOnly, true);
+
+    if (dialog.exec() == QFileDialog::Accepted)
+    {
+        ui->treeWidgetSummary->clear();
+        const QString directory = dialog.selectedFiles().first();
+        ui->lineEditSelectedDirectory->setText(QDir::toNativeSeparators(directory));
+    }
+}
+
+void MainWindow::onFindDuplicates()
+{
+    const QString selectedDirectory = ui->lineEditSelectedDirectory->text();
+
+    if (selectedDirectory.isEmpty())
+    {
+        onOpenDirectoryDialog();
+        onFindDuplicates();
+    }
+
+    if (!QDir().exists(selectedDirectory))
+    {
+        QMessageBox::warning(this, "Selected directory", '"' + selectedDirectory + '"' + " does not appear to exist!");
+        onOpenDirectoryDialog();
+        return;
+    }
+
+    populateTree(ui->lineEditSelectedDirectory->text());
 }
 
 void MainWindow::onDuplicateFound(const QString& hashString, const QString& filePath)
@@ -162,6 +124,49 @@ void MainWindow::onFinished()
 
     ui->statusBar->showMessage(QTime::currentTime().toString() + " Finished processing.\n ", 10000);
     ui->menuAlgorithm->setEnabled(true);
+}
+
+void MainWindow::deleteSelected()
+{
+    QMap<QTreeWidgetItem*, QString> filePaths;
+
+    QTreeWidgetItemIterator it(ui->treeWidgetSummary);
+
+    while (*it)
+    {
+        if ((*it)->checkState(1) == Qt::CheckState::Checked)
+        {
+            filePaths[*it] = (*it)->text(1);
+        }
+
+      ++it;
+    }
+
+    if (filePaths.empty() ||
+            QMessageBox::question(
+                this,
+                "Confirm delete?",
+                "Are you sure you want to delete the following files:\n" + filePaths.values().join('\n')) !=
+            QMessageBox::StandardButton::Yes)
+    {
+        return;
+    }
+
+    for (auto iter = filePaths.constBegin(); iter != filePaths.constEnd(); ++iter)
+    {
+        if (!QFile::remove(iter.value()))
+        {
+            if (QFile::exists(iter.value()))
+            {
+                QMessageBox::warning(this, "Failed to remove file", "Failed to remove:\n\n" + iter.value() + "\n");
+                continue;
+            }
+
+            QMessageBox::warning(this, "Failed to remove file", iter.value() + "\n\ndoes not exist anymore!\n");
+        }
+
+        delete iter.key();
+    }
 }
 
 void MainWindow::populateTree(const QString& directory)
@@ -270,4 +275,21 @@ bool MainWindow::removeFile(const QString &filePath)
     }
 
     return true;
+}
+
+
+void MainWindow::onAbout()
+{
+    QStringList text;
+    text << "Duff - Duplicate File Finder version 0.1.";
+    text << "";
+    text << "Duff is yet another duplicate file finder.";
+    text << "";
+    text << "Duff calculates checksums of files withing given folder."
+            "The paths of the files containing a non-unique checksum are displayed in the main view.";
+    text << "";
+    text << "Duff is open source and written in Qt (C++) see Licenses for more details.";
+    text << "";
+
+    QMessageBox::about(this, "Duff", text.join('\n'));
 }

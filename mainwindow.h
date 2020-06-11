@@ -18,8 +18,12 @@ public:
     ~MainWindow();
 
 private slots:
+    void onOpenDirectoryDialog();
+    void onFindDuplicates();
     void onDuplicateFound(const QString& hashString, const QString& filePath);
     void onFinished();
+    void deleteSelected();
+    void onAbout();
 
 private:
     Ui::MainWindow* ui;
