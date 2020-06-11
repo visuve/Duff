@@ -16,10 +16,16 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
 
+    ui->actionOpen->setIcon(QApplication::style()->standardIcon(QStyle::SP_DirOpenIcon));
     connect(ui->actionOpen, &QAction::triggered, this, &MainWindow::onOpenDirectoryDialog);
+
+    ui->actionExit->setIcon(QApplication::style()->standardIcon(QStyle::SP_DialogCloseButton));
     connect(ui->actionExit, &QAction::triggered, qApp, &QApplication::quit);
+
+    ui->actionAbout->setIcon(QApplication::style()->standardIcon(QStyle::SP_MessageBoxInformation));
     connect(ui->actionAbout, &QAction::triggered, this, &MainWindow::onAbout);
 
+    ui->actionLicenses->setIcon(QApplication::style()->standardIcon(QStyle::SP_TitleBarMenuButton));
     connect(ui->actionLicenses, &QAction::triggered, [this]()
     {
         QMessageBox::aboutQt(this, "Duff");
