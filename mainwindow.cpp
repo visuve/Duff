@@ -9,6 +9,7 @@
 #include <QTime>
 #include <QMapIterator>
 #include <QDir>
+#include <QActionGroup>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
