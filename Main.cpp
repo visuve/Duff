@@ -71,7 +71,7 @@ void loadIcon(QApplication& application)
 {
 	QPixmap pixmap;
 
-	if (!pixmap.load(":/duff.png"))
+	if (!pixmap.load(":/Duff.png"))
 	{
 		qWarning() << "Failed to load application icon!";
 		return;
