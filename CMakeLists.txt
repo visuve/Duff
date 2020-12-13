@@ -8,10 +8,10 @@ set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-find_package(QT NAMES Qt5 COMPONENTS Widgets REQUIRED)
+find_package(QT NAMES Qt6 COMPONENTS Widgets REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets REQUIRED)
 
 file(GLOB DUFF_SOURCES "*.cpp" "*.hpp" ".ui" "*.qrc")
@@ -20,14 +20,10 @@ set(APP_ICON_RESOURCE_WINDOWS "Duff.rc")
 
 if (MSVC)
 	set(DUFF_EXECUTABLE "Duff")
-else()
-	set(DUFF_EXECUTABLE "duff")
-endif()
-
-if(${QT_VERSION_MAJOR} GREATER_EQUAL 6)
 	qt_add_executable(${DUFF_EXECUTABLE} ${DUFF_SOURCES} ${APP_ICON_RESOURCE_WINDOWS})
 else()
-	add_executable(${DUFF_EXECUTABLE} ${DUFF_SOURCES} ${APP_ICON_RESOURCE_WINDOWS})
+	set(DUFF_EXECUTABLE "duff")
+	qt_add_executable(${DUFF_EXECUTABLE} ${DUFF_SOURCES})
 endif()
 
 target_link_libraries(${DUFF_EXECUTABLE} PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)

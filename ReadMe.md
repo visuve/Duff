@@ -7,5 +7,5 @@
 
 ## Prerequisites
 
-- Qt 5.15 or greater
+- Qt 6.0 or greater
 - Qt supported compiler
