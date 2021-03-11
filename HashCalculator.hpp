@@ -17,6 +17,7 @@ signals:
 	void duplicateFound(const QString& hashString, const QString& filePath);
 
 private:
+	QByteArray calculateHash(const QString& filePath);
 	void run() override;
 
 	const QString _directory;

@@ -29,6 +29,29 @@ HashCalculator::~HashCalculator()
 	qDebug() << "Destroyed.";
 }
 
+QByteArray HashCalculator::calculateHash(const QString& filePath)
+{
+	QFile file(filePath);
+
+	if (!file.open(QFile::ReadOnly))
+	{
+		qWarning() << "Failed to open" << filePath;
+		return {};
+	}
+
+	emit processing(filePath);
+
+	QCryptographicHash hash(_algorithm);
+
+	if (!hash.addData(&file))
+	{
+		qWarning() << "Failed to process: " << filePath;
+		return {};
+	}
+
+	return hash.result().toHex();
+}
+
 void HashCalculator::run()
 {
 	QDirIterator it(_directory, QDir::Files, QDirIterator::Subdirectories);
@@ -37,37 +60,25 @@ void HashCalculator::run()
 	while (!QThread::currentThread()->isInterruptionRequested() && it.hasNext())
 	{
 		const QString path = QDir::toNativeSeparators(it.next());
-		QFile file(path);
+		const QByteArray fileHash = calculateHash(path);
 
-		if (!file.open(QFile::ReadOnly))
+		if (fileHash.isEmpty())
 		{
-			qWarning() << "Failed to open" << path;
 			continue;
 		}
 
-		emit processing(path);
-
-		QCryptographicHash hash(_algorithm);
-
-		if (!hash.addData(&file))
-		{
-			qWarning() << "Failed to process: " << path;
-			continue;
-		}
-
-		const QString hashString = hash.result().toHex();
-		fileHashes[hashString].append(path);
-		int size = fileHashes[hashString].size();
+		fileHashes[fileHash] << (path);
+		int size = fileHashes[fileHash].size();
 
 		if (size == 2)
 		{
-			emit duplicateFound(hashString, fileHashes[hashString].first());
-			emit duplicateFound(hashString, path);
+			emit duplicateFound(fileHash, fileHashes[fileHash].first());
+			emit duplicateFound(fileHash, path);
 		}
 
 		if (size > 2)
 		{
-			emit duplicateFound(hashString, path);
+			emit duplicateFound(fileHash, path);
 		}
 	}
 }

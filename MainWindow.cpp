@@ -284,7 +284,6 @@ bool MainWindow::removeFile(const QString& filePath)
 	return true;
 }
 
-
 void MainWindow::onAbout()
 {
 	QStringList text;
