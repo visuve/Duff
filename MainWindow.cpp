@@ -3,15 +3,14 @@
 #include "HashCalculator.hpp"
 #include "ResultModel.hpp"
 
+#include <QActionGroup>
 #include <QDebug>
-#include <QTreeWidgetItem>
+#include <QDesktopServices>
+#include <QDir>
 #include <QFileDialog>
 #include <QMessageBox>
-#include <QDesktopServices>
 #include <QTime>
-#include <QMapIterator>
-#include <QDir>
-#include <QActionGroup>
+#include <QTreeWidgetItem>
 
 MainWindow::MainWindow(QWidget* parent) :
 	QMainWindow(parent),
@@ -168,7 +167,7 @@ void MainWindow::populateTree(const QString& directory)
 
 void MainWindow::createFileContextMenu(const QPoint& pos)
 {
-	QModelIndex selection = ui->treeViewResults->indexAt(pos);
+	const QModelIndex selection = ui->treeViewResults->indexAt(pos);
 
 	if (!selection.isValid())
 	{

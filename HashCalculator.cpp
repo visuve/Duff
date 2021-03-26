@@ -1,7 +1,7 @@
 #include "HashCalculator.hpp"
+#include <QDebug>
 #include <QDir>
 #include <QDirIterator>
-#include <QDebug>
 #include <QMap>
 #include <QStringList>
 
