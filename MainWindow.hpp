@@ -3,11 +3,12 @@
 #include <QMainWindow>
 #include <QCryptographicHash>
 
-#include "HashCalculator.hpp"
+namespace Ui
+{
+	class MainWindow;
+}
 
-QT_BEGIN_NAMESPACE
-namespace Ui { class MainWindow; }
-QT_END_NAMESPACE
+class ResultModel;
 
 class MainWindow : public QMainWindow
 {
@@ -32,4 +33,5 @@ private:
 	bool removeFile(const QString& filePath);
 
 	QCryptographicHash::Algorithm _algorithm = QCryptographicHash::Sha256;
+	ResultModel* _model = nullptr;
 };

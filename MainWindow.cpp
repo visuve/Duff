@@ -1,5 +1,7 @@
 #include "MainWindow.hpp"
 #include "ui_MainWindow.h"
+#include "HashCalculator.hpp"
+#include "ResultModel.hpp"
 
 #include <QDebug>
 #include <QTreeWidgetItem>
@@ -13,7 +15,8 @@
 
 MainWindow::MainWindow(QWidget* parent) :
 	QMainWindow(parent),
-	ui(new Ui::MainWindow())
+	ui(new Ui::MainWindow()),
+	_model(new ResultModel(this))
 {
 	ui->setupUi(this);
 
@@ -32,8 +35,8 @@ MainWindow::MainWindow(QWidget* parent) :
 		QMessageBox::aboutQt(this, "Duff");
 	});
 
-	ui->treeWidgetSummary->setContextMenuPolicy(Qt::CustomContextMenu);
-	connect(ui->treeWidgetSummary, &QTreeWidget::customContextMenuRequested, this, &MainWindow::createFileContextMenu);
+	// ui->treeWidgetSummary->setContextMenuPolicy(Qt::CustomContextMenu);
+	// connect(ui->treeWidgetSummary, &QTreeWidget::customContextMenuRequested, this, &MainWindow::createFileContextMenu);
 
 	auto algorithmGroup = new QActionGroup(this);
 	algorithmGroup->addAction(ui->actionMD5);
@@ -50,6 +53,8 @@ MainWindow::MainWindow(QWidget* parent) :
 
 	connect(ui->pushButtonFindDuplicates, &QPushButton::clicked, this, &MainWindow::onFindDuplicates);
 	connect(ui->pushButtonDeleteSelected, &QPushButton::clicked, this, &MainWindow::deleteSelected);
+
+	ui->treeViewResults->setModel(_model);
 }
 
 MainWindow::~MainWindow()
@@ -65,7 +70,7 @@ void MainWindow::onOpenDirectoryDialog()
 
 	if (dialog.exec() == QFileDialog::Accepted)
 	{
-		ui->treeWidgetSummary->clear();
+		_model->clear();
 		const QString directory = dialog.selectedFiles().first();
 		ui->lineEditSelectedDirectory->setText(QDir::toNativeSeparators(directory));
 	}
@@ -93,7 +98,8 @@ void MainWindow::onFindDuplicates()
 
 void MainWindow::onDuplicateFound(const QString& hashString, const QString& filePath)
 {
-	ui->statusBar->showMessage(QTime::currentTime().toString() + " Found duplicate: " + filePath + " -> " + hashString);
+	qDebug() << hashString << filePath;
+	/*ui->statusBar->showMessage(QTime::currentTime().toString() + " Found duplicate: " + filePath + " -> " + hashString);
 
 	const QList<QTreeWidgetItem*> hashItems = ui->treeWidgetSummary->findItems(hashString, Qt::MatchFlag::MatchExactly);
 
@@ -112,12 +118,12 @@ void MainWindow::onDuplicateFound(const QString& hashString, const QString& file
 	if (hashItems.empty())
 	{
 		ui->treeWidgetSummary->insertTopLevelItem(0, hashItem);
-	}
+	}*/
 }
 
 void MainWindow::onFinished()
 {
-	if (ui->treeWidgetSummary->topLevelItemCount() <= 0)
+	/*if (ui->treeWidgetSummary->topLevelItemCount() <= 0)
 	{
 		QMessageBox::information(
 			this,
@@ -130,12 +136,12 @@ void MainWindow::onFinished()
 	}
 
 	ui->statusBar->showMessage(QTime::currentTime().toString() + " Finished processing.\n ", 10000);
-	ui->menuAlgorithm->setEnabled(true);
+	ui->menuAlgorithm->setEnabled(true);*/
 }
 
 void MainWindow::deleteSelected()
 {
-	QMap<QTreeWidgetItem*, QString> filePaths;
+	/*QMap<QTreeWidgetItem*, QString> filePaths;
 
 	QTreeWidgetItemIterator it(ui->treeWidgetSummary);
 
@@ -173,12 +179,12 @@ void MainWindow::deleteSelected()
 		}
 
 		delete iter.key();
-	}
+	}*/
 }
 
 void MainWindow::populateTree(const QString& directory)
 {
-	ui->treeWidgetSummary->clear();
+	_model->clear();
 	ui->menuAlgorithm->setEnabled(false);
 
 	auto hashCalculator = new HashCalculator(this, directory, _algorithm);
@@ -196,7 +202,7 @@ void MainWindow::populateTree(const QString& directory)
 
 void MainWindow::createFileContextMenu(const QPoint& pos)
 {
-	QTreeWidgetItem* selection = ui->treeWidgetSummary->itemAt(pos);
+	/*QTreeWidgetItem* selection = ui->treeWidgetSummary->itemAt(pos);
 
 	if (!selection)
 	{
@@ -256,7 +262,7 @@ void MainWindow::createFileContextMenu(const QPoint& pos)
 
 	QMenu menu(this);
 	menu.addActions({ openFileAction, openParentDirAction, removeFileAction });
-	menu.exec(ui->treeWidgetSummary->mapToGlobal(pos));
+	menu.exec(ui->treeWidgetSummary->mapToGlobal(pos));*/
 }
 
 bool MainWindow::removeFile(const QString& filePath)
