@@ -23,20 +23,6 @@ ResultModel::ResultModel(QObject *parent) :
 	QAbstractItemModel(parent),
 	_root(new Node(nullptr, { "root" }))
 {
-	/*auto alpha = new Node(_root, { "59A621333B9D06D35B70BB501B5E02CCAFD7B31B" });
-	alpha->_children.append(new Node(alpha, { "foo.txt", false }));
-	alpha->_children.append(new Node(alpha, { "bar.txt", false }));
-	alpha->_children.append(new Node(alpha, { "foobar.txt", false }));
-	alpha->_children.append(new Node(alpha, { "barfoo.txt", false }));
-
-	auto bravo = new Node(_root, { "A23D723D5C996508FC0BED38E9726916D0A3BB1A" });
-	bravo->_children.append(new Node(bravo, { "x.txt", false }));
-	bravo->_children.append(new Node(bravo, { "y.txt", false }));
-	bravo->_children.append(new Node(bravo, { "z.txt", false }));
-	bravo->_children.append(new Node(bravo, { "w.txt", false }));
-
-	_root->_children.append(alpha);
-	_root->_children.append(bravo);*/
 }
 
 ResultModel::~ResultModel()

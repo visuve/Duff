@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.8)
 
-project(TunkioGUI LANGUAGES CXX)
+project(Duff LANGUAGES CXX)
 
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 

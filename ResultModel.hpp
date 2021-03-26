@@ -1,7 +1,6 @@
 #pragma once
 
 #include <QAbstractItemModel>
-#include <QStandardItem>
 #include <QVector>
 
 class ResultModel : public QAbstractItemModel
