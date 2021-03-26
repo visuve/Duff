@@ -9,6 +9,7 @@ ResultModel::Node::Node(Node* parent, const QVector<QVariant>& data) :
 ResultModel::Node::~Node()
 {
 	qDeleteAll(_children);
+	qDebug() << _data[0];
 }
 
 int ResultModel::Node::parentRow() const
@@ -159,7 +160,7 @@ Qt::ItemFlags ResultModel::flags(const QModelIndex& index) const
 		return Qt::ItemIsEnabled;
 	}
 
-	return Qt::ItemIsEnabled | Qt::ItemIsEditable | Qt::ItemIsUserCheckable;
+	return Qt::ItemIsEnabled | Qt::ItemIsUserCheckable;
 }
 
 void ResultModel::clear()
@@ -212,5 +213,33 @@ QStringList ResultModel::selectedPaths() const
 
 void ResultModel::removePath(const QString& filePath)
 {
-	qDebug() << filePath;
+	beginResetModel();
+
+	for (int i = 0; i < _root->_children.size();)
+	{
+		Node* hashNode = _root->_children[i];
+
+		for (int j = 0; j < hashNode->_children.size();)
+		{
+			Node* pathNode = hashNode->_children[j];
+
+			if (pathNode->_data[0].toString() != filePath)
+			{
+				++j;
+				continue;
+			}
+
+			delete hashNode->_children.takeAt(j);
+		}
+
+		if (!hashNode->_children.isEmpty())
+		{
+			++i;
+			continue;
+		}
+
+		delete _root->_children.takeAt(i);
+	}
+
+	endResetModel();
 }
