@@ -99,87 +99,53 @@ void MainWindow::onFindDuplicates()
 void MainWindow::onDuplicateFound(const QString& hashString, const QString& filePath)
 {
 	qDebug() << hashString << filePath;
-	/*ui->statusBar->showMessage(QTime::currentTime().toString() + " Found duplicate: " + filePath + " -> " + hashString);
-
-	const QList<QTreeWidgetItem*> hashItems = ui->treeWidgetSummary->findItems(hashString, Qt::MatchFlag::MatchExactly);
-
-	if (hashItems.size() > 1)
-	{
-		qCritical() << "More than one item with the hash '" << hashString << "' found!";
-		return;
-	}
-
-	QTreeWidgetItem* hashItem = hashItems.empty() ? new QTreeWidgetItem({ hashString }) : hashItems.first();
-	auto pathItem = new QTreeWidgetItem();
-	pathItem->setCheckState(1, Qt::Unchecked);
-	pathItem->setText(1, filePath);
-	hashItem->addChild(pathItem);
-
-	if (hashItems.empty())
-	{
-		ui->treeWidgetSummary->insertTopLevelItem(0, hashItem);
-	}*/
+	ui->statusBar->showMessage(QTime::currentTime().toString() + " Found duplicate: " + filePath + " -> " + hashString);
+	_model->addItem(hashString, filePath);
 }
 
 void MainWindow::onFinished()
 {
-	/*if (ui->treeWidgetSummary->topLevelItemCount() <= 0)
+	if (_model->rowCount() <= 0)
 	{
 		QMessageBox::information(
 			this,
 			"No duplicate files",
 			"No duplicate files were found.\n");
 	}
-	else
-	{
-		ui->treeWidgetSummary->resizeColumnToContents(0);
-	}
 
 	ui->statusBar->showMessage(QTime::currentTime().toString() + " Finished processing.\n ", 10000);
-	ui->menuAlgorithm->setEnabled(true);*/
+	ui->menuAlgorithm->setEnabled(true);
 }
 
 void MainWindow::deleteSelected()
 {
-	/*QMap<QTreeWidgetItem*, QString> filePaths;
-
-	QTreeWidgetItemIterator it(ui->treeWidgetSummary);
-
-	while (*it)
-	{
-		if ((*it)->checkState(1) == Qt::CheckState::Checked)
-		{
-			filePaths[*it] = (*it)->text(1);
-		}
-
-		++it;
-	}
+	QStringList filePaths = _model->selectedPaths();
 
 	if (filePaths.empty() ||
 		QMessageBox::question(
 			this,
 			"Confirm delete?",
-			"Are you sure you want to delete the following files:\n" + filePaths.values().join('\n')) !=
+			"Are you sure you want to delete the following files:\n" + filePaths.join('\n')) !=
 		QMessageBox::StandardButton::Yes)
 	{
 		return;
 	}
 
-	for (auto iter = filePaths.constBegin(); iter != filePaths.constEnd(); ++iter)
+	for (const QString& filePath : filePaths)
 	{
-		if (!QFile::remove(iter.value()))
+		if (!QFile::remove(filePath))
 		{
-			if (QFile::exists(iter.value()))
+			if (QFile::exists(filePath))
 			{
-				QMessageBox::warning(this, "Failed to remove file", "Failed to remove:\n\n" + iter.value() + "\n");
+				QMessageBox::warning(this, "Failed to remove file", "Failed to remove:\n\n" + filePath + "\n");
 				continue;
 			}
 
-			QMessageBox::warning(this, "Failed to remove file", iter.value() + "\n\ndoes not exist anymore!\n");
+			QMessageBox::warning(this, "Failed to remove file", filePath + "\n\ndoes not exist anymore!\n");
 		}
 
-		delete iter.key();
-	}*/
+		_model->removePath(filePath);
+	}
 }
 
 void MainWindow::populateTree(const QString& directory)
