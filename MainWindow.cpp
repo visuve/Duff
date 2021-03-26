@@ -35,8 +35,8 @@ MainWindow::MainWindow(QWidget* parent) :
 		QMessageBox::aboutQt(this, "Duff");
 	});
 
-	// ui->treeWidgetSummary->setContextMenuPolicy(Qt::CustomContextMenu);
-	// connect(ui->treeWidgetSummary, &QTreeWidget::customContextMenuRequested, this, &MainWindow::createFileContextMenu);
+	ui->treeViewResults->setContextMenuPolicy(Qt::CustomContextMenu);
+	connect(ui->treeViewResults, &QTreeWidget::customContextMenuRequested, this, &MainWindow::createFileContextMenu);
 
 	auto algorithmGroup = new QActionGroup(this);
 	algorithmGroup->addAction(ui->actionMD5);
@@ -168,15 +168,23 @@ void MainWindow::populateTree(const QString& directory)
 
 void MainWindow::createFileContextMenu(const QPoint& pos)
 {
-	/*QTreeWidgetItem* selection = ui->treeWidgetSummary->itemAt(pos);
+	QModelIndex selection = ui->treeViewResults->indexAt(pos);
 
-	if (!selection)
+	if (!selection.isValid())
 	{
 		qDebug() << "Invalid selection";
 		return;
 	}
 
-	const QString filePath = selection->text(1);
+	const QVariant variant = _model->data(selection, Qt::DisplayRole);
+
+	if (!variant.isValid())
+	{
+		qDebug() << "Invalid variant";
+		return;
+	}
+
+	const QString filePath = variant.toString();
 
 	if (filePath.isEmpty())
 	{
@@ -187,7 +195,9 @@ void MainWindow::createFileContextMenu(const QPoint& pos)
 	auto openFileAction = new QAction("Open file", this);
 	connect(openFileAction, &QAction::triggered, [=]()
 	{
-		if (!QDesktopServices::openUrl(filePath))
+		const QUrl url = QUrl::fromLocalFile(filePath);
+
+		if (!QDesktopServices::openUrl(url))
 		{
 			QMessageBox::warning(this, "Failed to open", "Failed to open file:\n\n" + filePath + "\n");
 		}
@@ -197,8 +207,9 @@ void MainWindow::createFileContextMenu(const QPoint& pos)
 	connect(openParentDirAction, &QAction::triggered, [=]()
 	{
 		const QFileInfo fileInfo(filePath);
+		const QUrl url = QUrl::fromLocalFile(fileInfo.dir().path());
 
-		if (!QDesktopServices::openUrl(fileInfo.dir().path()))
+		if (!QDesktopServices::openUrl(url))
 		{
 			QMessageBox::warning(this, "Failed to open", "Failed to open directory:\n\n" + filePath + "\n");
 		}
@@ -212,23 +223,12 @@ void MainWindow::createFileContextMenu(const QPoint& pos)
 			return;
 		}
 
-		auto parent = selection->parent();
-		parent->removeChild(selection);
-
-		if (parent->childCount() <= 1)
-		{
-			delete parent;
-		}
-
-		if (ui->treeWidgetSummary->topLevelItemCount() <= 0)
-		{
-			QMessageBox::information(this, "No duplicate files", "No duplicate files left!\n");
-		}
+		_model->removePath(filePath);
 	});
 
 	QMenu menu(this);
 	menu.addActions({ openFileAction, openParentDirAction, removeFileAction });
-	menu.exec(ui->treeWidgetSummary->mapToGlobal(pos));*/
+	menu.exec(ui->treeViewResults->mapToGlobal(pos));
 }
 
 bool MainWindow::removeFile(const QString& filePath)
