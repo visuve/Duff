@@ -22,7 +22,7 @@ ResultModel::ResultModel(QObject *parent) :
 	QAbstractItemModel(parent),
 	_root(new Node(nullptr, { "root" }))
 {
-	auto alpha = new Node(_root, { "59A621333B9D06D35B70BB501B5E02CCAFD7B31B" });
+	/*auto alpha = new Node(_root, { "59A621333B9D06D35B70BB501B5E02CCAFD7B31B" });
 	alpha->_children.append(new Node(alpha, { "foo.txt", false }));
 	alpha->_children.append(new Node(alpha, { "bar.txt", false }));
 	alpha->_children.append(new Node(alpha, { "foobar.txt", false }));
@@ -35,7 +35,7 @@ ResultModel::ResultModel(QObject *parent) :
 	bravo->_children.append(new Node(bravo, { "w.txt", false }));
 
 	_root->_children.append(alpha);
-	_root->_children.append(bravo);
+	_root->_children.append(bravo);*/
 }
 
 ResultModel::~ResultModel()
@@ -168,4 +168,49 @@ void ResultModel::clear()
 	delete _root;
 	_root = new Node(nullptr, { "root" });
 	endResetModel();
+}
+
+void ResultModel::addItem(const QString& hash, const QString& filePath)
+{
+	if (_root->_children.size() <= 0)
+	{
+		beginInsertRows(QModelIndex(), 0, 1);
+		auto hashNode = new Node(_root, { hash });
+		hashNode->_children.append(new Node(hashNode, { filePath, false }));
+		_root->_children.append(hashNode);
+		endInsertRows();
+		return;
+	}
+
+	for (Node* hashNode : _root->_children)
+	{
+		if (hashNode->_data[0] == hash)
+		{
+			hashNode->_children.append(new Node(hashNode, { filePath, false }));
+			break;
+		}
+	}
+}
+
+QStringList ResultModel::selectedPaths() const
+{
+	QStringList results;
+
+	for (Node* hashNode : _root->_children)
+	{
+		for (Node* pathNode : hashNode->_children)
+		{
+			if (pathNode->_data[1].toBool())
+			{
+				results.append(pathNode->_data[0].toString());
+			}
+		}
+	}
+
+	return results;
+}
+
+void ResultModel::removePath(const QString& filePath)
+{
+	qDebug() << filePath;
 }

@@ -38,6 +38,9 @@ public:
 	Qt::ItemFlags flags(const QModelIndex& index) const override;
 
 	void clear();
+	void addItem(const QString& hash, const QString& filePath);
+	QStringList selectedPaths() const;
+	void removePath(const QString& filePath);
 
 private:
 	Node* _root = nullptr;
