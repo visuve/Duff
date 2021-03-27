@@ -9,14 +9,14 @@ class ResultModel : public QAbstractItemModel
 
 	struct Node
 	{
-		Node(Node* parent, const QVector<QVariant>& data);
+		Node(Node* parent, const QMap<Qt::ItemDataRole, QVariant>& data);
 		~Node();
 
 		int parentRow() const;
 
 		Node* _parent;
 		QVector<Node*> _children;
-		QVector<QVariant> _data;
+		QMap<Qt::ItemDataRole, QVariant> _data;
 	};
 
 public:

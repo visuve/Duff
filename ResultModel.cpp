@@ -1,6 +1,6 @@
 #include "ResultModel.hpp"
 
-ResultModel::Node::Node(Node* parent, const QVector<QVariant>& data) :
+ResultModel::Node::Node(Node* parent, const QMap<Qt::ItemDataRole, QVariant>& data) :
 	_parent(parent),
 	_data(data)
 {
@@ -9,7 +9,7 @@ ResultModel::Node::Node(Node* parent, const QVector<QVariant>& data) :
 ResultModel::Node::~Node()
 {
 	qDeleteAll(_children);
-	qDebug() << _data[0];
+	qDebug() << _data[Qt::DisplayRole];
 }
 
 int ResultModel::Node::parentRow() const
@@ -21,7 +21,7 @@ int ResultModel::Node::parentRow() const
 
 ResultModel::ResultModel(QObject *parent) :
 	QAbstractItemModel(parent),
-	_root(new Node(nullptr, { "root" }))
+	_root(new Node(nullptr, { { Qt::DisplayRole, "root" } }))
 {
 }
 
@@ -90,7 +90,7 @@ QVariant ResultModel::data(const QModelIndex& index, int role) const
 	{
 		if (hashCell || pathCell)
 		{
-			return item->_data[0];
+			return item->_data[Qt::DisplayRole];
 		}
 	}
 
@@ -98,7 +98,7 @@ QVariant ResultModel::data(const QModelIndex& index, int role) const
 	{
 		if (pathCell)
 		{
-			return item->_data[1].toBool() ? Qt::Checked : Qt::Unchecked;
+			return item->_data[Qt::CheckStateRole];
 		}
 	}
 
@@ -113,7 +113,7 @@ bool ResultModel::setData(const QModelIndex& index, const QVariant& value, int r
 
 	if (role == Qt::CheckStateRole && pathCell)
 	{
-		item->_data[1] = value == Qt::Checked;
+		item->_data[Qt::CheckStateRole] = value;
 		emit dataChanged(index, index);
 		return true;
 	}
@@ -153,7 +153,7 @@ void ResultModel::clear()
 {
 	beginResetModel();
 	delete _root;
-	_root = new Node(nullptr, { "root" });
+	_root = new Node(nullptr, { { Qt::DisplayRole, "root" } });
 	endResetModel();
 }
 
@@ -162,8 +162,9 @@ void ResultModel::addItem(const QString& hash, const QString& filePath)
 	if (_root->_children.size() <= 0)
 	{
 		beginInsertRows(QModelIndex(), 0, 1);
-		auto hashNode = new Node(_root, { hash });
-		hashNode->_children.append(new Node(hashNode, { filePath, false }));
+		auto hashNode = new Node(_root, { { Qt::DisplayRole, hash } });
+		hashNode->_children.append(
+			new Node(hashNode, { { Qt::DisplayRole, filePath }, { Qt::CheckStateRole, false } }));
 		_root->_children.append(hashNode);
 		endInsertRows();
 		return;
@@ -171,9 +172,10 @@ void ResultModel::addItem(const QString& hash, const QString& filePath)
 
 	for (Node* hashNode : _root->_children)
 	{
-		if (hashNode->_data[0] == hash)
+		if (hashNode->_data[Qt::DisplayRole] == hash)
 		{
-			hashNode->_children.append(new Node(hashNode, { filePath, false }));
+			hashNode->_children.append(
+				new Node(hashNode, { { Qt::DisplayRole, filePath }, { Qt::CheckStateRole, false } }));
 			break;
 		}
 	}
@@ -187,9 +189,9 @@ QStringList ResultModel::selectedPaths() const
 	{
 		for (Node* pathNode : hashNode->_children)
 		{
-			if (pathNode->_data[1].toBool())
+			if (pathNode->_data[Qt::CheckStateRole] == Qt::Checked)
 			{
-				results.append(pathNode->_data[0].toString());
+				results.append(pathNode->_data[Qt::DisplayRole].toString());
 			}
 		}
 	}
@@ -209,7 +211,7 @@ void ResultModel::removePath(const QString& filePath)
 		{
 			Node* pathNode = hashNode->_children[j];
 
-			if (pathNode->_data[0].toString() != filePath)
+			if (pathNode->_data[Qt::DisplayRole].toString() != filePath)
 			{
 				++j;
 				continue;
