@@ -30,6 +30,8 @@ private:
 	Ui::MainWindow* ui;
 	void populateTree(const QString& directory);
 	void createFileContextMenu(const QPoint& pos);
+	void openFileWithDefaultAssociation(const QString& filePath);
+	void openParentDirectory(const QString& filePath);
 	bool removeFile(const QString& filePath);
 
 	QCryptographicHash::Algorithm _algorithm = QCryptographicHash::Sha256;

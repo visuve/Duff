@@ -16,9 +16,8 @@ find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets REQUIRED)
 
 file(GLOB DUFF_SOURCES "*.cpp" "*.hpp" ".ui" "*.qrc")
 
-set(APP_ICON_RESOURCE_WINDOWS "Duff.rc")
-
 if (MSVC)
+	set(APP_ICON_RESOURCE_WINDOWS "Duff.rc")
 	set(DUFF_EXECUTABLE "Duff")
 	qt_add_executable(${DUFF_EXECUTABLE} ${DUFF_SOURCES} ${APP_ICON_RESOURCE_WINDOWS})
 else()

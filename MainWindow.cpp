@@ -192,42 +192,38 @@ void MainWindow::createFileContextMenu(const QPoint& pos)
 	}
 
 	auto openFileAction = new QAction("Open file", this);
-	connect(openFileAction, &QAction::triggered, [=]()
-	{
-		const QUrl url = QUrl::fromLocalFile(filePath);
-
-		if (!QDesktopServices::openUrl(url))
-		{
-			QMessageBox::warning(this, "Failed to open", "Failed to open file:\n\n" + filePath + "\n");
-		}
-	});
+	connect(openFileAction, &QAction::triggered, std::bind(&MainWindow::openFileWithDefaultAssociation, this, filePath));
 
 	auto openParentDirAction = new QAction("Open parent directory", this);
-	connect(openParentDirAction, &QAction::triggered, [=]()
-	{
-		const QFileInfo fileInfo(filePath);
-		const QUrl url = QUrl::fromLocalFile(fileInfo.dir().path());
-
-		if (!QDesktopServices::openUrl(url))
-		{
-			QMessageBox::warning(this, "Failed to open", "Failed to open directory:\n\n" + filePath + "\n");
-		}
-	});
+	connect(openParentDirAction, &QAction::triggered, std::bind(&MainWindow::openParentDirectory, this, filePath));
 
 	auto removeFileAction = new QAction("Delete file", this);
-	connect(removeFileAction, &QAction::triggered, [=]()
-	{
-		if (!removeFile(filePath))
-		{
-			return;
-		}
-
-		_model->removePath(filePath);
-	});
+	connect(removeFileAction, &QAction::triggered, std::bind(&MainWindow::removeFile, this, filePath));
 
 	QMenu menu(this);
 	menu.addActions({ openFileAction, openParentDirAction, removeFileAction });
 	menu.exec(ui->treeViewResults->mapToGlobal(pos));
+}
+
+void MainWindow::openFileWithDefaultAssociation(const QString& filePath)
+{
+	const QUrl url = QUrl::fromLocalFile(filePath);
+
+	if (!QDesktopServices::openUrl(url))
+	{
+		QMessageBox::warning(this, "Failed to open", "Failed to open file:\n\n" + filePath + "\n");
+	}
+}
+
+void MainWindow::openParentDirectory(const QString& filePath)
+{
+	const QFileInfo fileInfo(filePath);
+	const QUrl url = QUrl::fromLocalFile(fileInfo.dir().path());
+
+	if (!QDesktopServices::openUrl(url))
+	{
+		QMessageBox::warning(this, "Failed to open", "Failed to open directory:\n\n" + filePath + "\n");
+	}
 }
 
 bool MainWindow::removeFile(const QString& filePath)
@@ -252,6 +248,7 @@ bool MainWindow::removeFile(const QString& filePath)
 		QMessageBox::warning(this, "Failed to remove file", filePath + "\n\ndoes not exist anymore!\n");
 	}
 
+	_model->removePath(filePath);
 	return true;
 }
 
