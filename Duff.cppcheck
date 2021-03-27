@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="1">
+    <builddir>out/cppcheck</builddir>
+    <check-headers>true</check-headers>
+    <check-unused-templates>true</check-unused-templates>
+    <max-ctu-depth>10</max-ctu-depth>
+    <max-template-recursion>100</max-template-recursion>
+    <paths>
+        <dir name="."/>
+    </paths>
+    <exclude>
+        <path name=".git/"/>
+        <path name="out/"/>
+    </exclude>
+    <libraries>
+        <library>qt</library>
+    </libraries>
+    <suppressions>
+        <suppression>noExplicitConstructor</suppression>
+        <suppression>unusedFunction</suppression>
+    </suppressions>
+</project>
