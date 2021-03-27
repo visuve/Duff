@@ -1,4 +1,5 @@
 #include "ResultModel.hpp"
+#include "ResultModel.hpp"
 
 ResultModel::Node::Node(Node* parent, const QMap<Qt::ItemDataRole, QVariant>& data) :
 	_parent(parent),
@@ -157,9 +158,9 @@ void ResultModel::clear()
 	endResetModel();
 }
 
-void ResultModel::addItem(const QString& hash, const QString& filePath)
+void ResultModel::addPath(const QString& hash, const QString& filePath)
 {
-	if (_root->_children.size() <= 0)
+	if (_root->_children.isEmpty())
 	{
 		beginInsertRows(QModelIndex(), 0, 1);
 		auto hashNode = new Node(_root, { { Qt::DisplayRole, hash } });
@@ -167,16 +168,18 @@ void ResultModel::addItem(const QString& hash, const QString& filePath)
 			new Node(hashNode, { { Qt::DisplayRole, filePath }, { Qt::CheckStateRole, false } }));
 		_root->_children.append(hashNode);
 		endInsertRows();
-		return;
 	}
-
-	for (Node* hashNode : _root->_children)
+	else
 	{
-		if (hashNode->_data[Qt::DisplayRole] == hash)
+		auto iter = std::find_if(_root->_children.begin(), _root->_children.end(), [&](const Node* hashNode)
 		{
-			hashNode->_children.append(
-				new Node(hashNode, { { Qt::DisplayRole, filePath }, { Qt::CheckStateRole, false } }));
-			break;
+			return hashNode->_data[Qt::DisplayRole] == hash;
+		});
+
+		if (iter != _root->_children.end())
+		{
+			(*iter)->_children.append(
+				new Node(*iter, { { Qt::DisplayRole, filePath }, { Qt::CheckStateRole, false } }));
 		}
 	}
 }

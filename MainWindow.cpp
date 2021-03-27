@@ -99,7 +99,7 @@ void MainWindow::onDuplicateFound(const QString& hashString, const QString& file
 {
 	qDebug() << hashString << filePath;
 	ui->statusBar->showMessage(QTime::currentTime().toString() + " Found duplicate: " + filePath + " -> " + hashString);
-	_model->addItem(hashString, filePath);
+	_model->addPath(hashString, filePath);
 }
 
 void MainWindow::onFinished()
@@ -112,7 +112,7 @@ void MainWindow::onFinished()
 			"No duplicate files were found.\n");
 	}
 
-	ui->statusBar->showMessage(QTime::currentTime().toString() + " Finished processing.\n ", 10000);
+	ui->statusBar->showMessage(QTime::currentTime().toString() + " Finished processing.\n ");
 	ui->menuAlgorithm->setEnabled(true);
 }
 
