@@ -1,6 +1,8 @@
 #include "ResultModel.hpp"
 #include "ResultModel.hpp"
 
+#include <QQueue>
+
 inline Node* indexToNode(const QModelIndex& index)
 {
 	return static_cast<Node*>(index.internalPointer());
@@ -58,16 +60,26 @@ public:
 
 	QVector<Node*> findChildren(const std::function<bool(Node*)>& lambda)
 	{
-		QVector<Node*> result;
+		QVector<Node*> results;
+		QQueue<Node*> queue;
+		queue.enqueue(this);
 
-		for (auto iter = std::find_if(_children.cbegin(), _children.cend(), lambda);
-			iter != _children.cend();
-			iter = std::find_if(++iter, _children.cend(), lambda))
+		while (!queue.empty())
 		{
-			result.append(*iter);
+			Node* node = queue.dequeue();
+
+			for (Node* child : node->_children)
+			{
+				queue.enqueue(child);
+			}
+
+			if (lambda(node))
+			{
+				results.push_back(node);
+			}
 		}
 
-		return result;
+		return results;
 	}
 
 	Node* findChild(const std::function<bool(Node*)>& lambda)
@@ -268,22 +280,16 @@ QStringList ResultModel::selectedPaths() const
 {
 	QStringList results;
 
-	for (int i = 0; i < _root->childCount(); ++i)
+	auto isChecked = [&](Node* node)
 	{
-		Node* hashNode = _root->childAt(i);
-		
-		auto result = hashNode->findChildren([&](Node* pathNode)->bool
-		{
-			return pathNode->data(Qt::CheckStateRole) == Qt::CheckState::Checked;
-		});
+		return node->data(Qt::CheckStateRole) == Qt::CheckState::Checked;
+	};
 
-		for (Node* pathNode : result)
-		{
-			results.append(pathNode->data(Qt::DisplayRole).toString());
-		}
+	for (Node* node : _root->findChildren(isChecked))
+	{
+		results.append(node->data(Qt::DisplayRole).toString());
 	}
 
-	qDebug() << results;
 	return results;
 }
 
@@ -291,18 +297,20 @@ void ResultModel::removePath(const QString& filePath)
 {
 	beginResetModel();
 
+	auto pathEquals = [&](Node* node)
+	{
+		return node->data(Qt::DisplayRole).toString() == filePath;
+	};
+
 	for (int i = 0; i < _root->childCount(); ++i)
 	{
 		Node* hashNode = _root->childAt(i);
 
-		auto result = hashNode->takeChildren([&](Node* pathNode)->bool
-		{
-			return pathNode->data(Qt::DisplayRole).toString() == filePath;
-		});
+		auto result = hashNode->takeChildren(pathEquals);
 
 		qDeleteAll(result);
 
-		if (!hashNode->hasChildren())
+		if (hashNode->childCount() < 2)
 		{
 			delete _root->takeChild(i);
 		}
