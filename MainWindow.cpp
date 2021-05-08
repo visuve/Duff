@@ -54,6 +54,13 @@ MainWindow::MainWindow(QWidget* parent) :
 	connect(ui->pushButtonDeleteSelected, &QPushButton::clicked, this, &MainWindow::deleteSelected);
 
 	ui->treeViewResults->setModel(_model);
+
+	const QStringList args = QCoreApplication::arguments();
+
+	if (args.count() == 2 && QDir().exists(args[1]))
+	{
+		populateTree(args[1]);
+	}
 }
 
 MainWindow::~MainWindow()
@@ -92,7 +99,7 @@ void MainWindow::onFindDuplicates()
 		return;
 	}
 
-	populateTree(ui->lineEditSelectedDirectory->text());
+	populateTree(selectedDirectory);
 }
 
 void MainWindow::onDuplicateFound(const QString& hashString, const QString& filePath)
