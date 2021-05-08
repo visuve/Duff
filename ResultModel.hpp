@@ -3,21 +3,11 @@
 #include <QAbstractItemModel>
 #include <QVector>
 
+class Node;
+
 class ResultModel : public QAbstractItemModel
 {
 	Q_OBJECT
-
-	struct Node
-	{
-		Node(Node* parent, const QMap<Qt::ItemDataRole, QVariant>& data);
-		~Node();
-
-		int parentRow() const;
-
-		Node* _parent;
-		QVector<Node*> _children;
-		QMap<Qt::ItemDataRole, QVariant> _data;
-	};
 
 public:
 	explicit ResultModel(QObject* parent = nullptr);
@@ -42,6 +32,6 @@ public:
 	void removePath(const QString& filePath);
 
 private:
-	Node* _root = nullptr;
+	Node* _root;
 };
 

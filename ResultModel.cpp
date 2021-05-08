@@ -1,24 +1,110 @@
 #include "ResultModel.hpp"
 #include "ResultModel.hpp"
 
-ResultModel::Node::Node(Node* parent, const QMap<Qt::ItemDataRole, QVariant>& data) :
-	_parent(parent),
-	_data(data)
+inline Node* indexToNode(const QModelIndex& index)
 {
+	return static_cast<Node*>(index.internalPointer());
 }
 
-ResultModel::Node::~Node()
+class Node
 {
-	qDeleteAll(_children);
-	qDebug() << _data[Qt::DisplayRole];
-}
+public:
+	Node(Node* parent, const QMap<Qt::ItemDataRole, QVariant>& data) :
+		_parent(parent),
+		_data(data)
+	{
+	}
 
-int ResultModel::Node::parentRow() const
-{
-	return _parent ?
-		_parent->_children.indexOf(const_cast<Node*>(this)) :
-		0;
-}
+	~Node()
+	{
+		qDeleteAll(_children);
+		qDebug() << _data[Qt::DisplayRole];
+	}
+
+	Node* parent() const
+	{
+		return _parent;
+	}
+
+	Node* childAt(int index)
+	{
+		return _children.at(index);
+	}
+
+	Node* takeChild(int index)
+	{
+		return _children.takeAt(index);
+	}
+
+	QVector<Node*> takeChildren(const std::function<bool(Node*)>& lambda)
+	{
+		QVector<Node*> result;
+
+		for (int i = 0; i < childCount(); ++i)
+		{
+			if (lambda(childAt(i)))
+			{
+				result.append(takeChild(i));
+			}
+		}
+
+		return result;
+	}
+
+	void appendChild(Node* child)
+	{
+		_children.append(child);
+	}
+
+	QVector<Node*> findChildren(const std::function<bool(Node*)>& lambda)
+	{
+		QVector<Node*> result;
+
+		for (auto iter = std::find_if(_children.cbegin(), _children.cend(), lambda);
+			iter != _children.cend();
+			iter = std::find_if(++iter, _children.cend(), lambda))
+		{
+			result.append(*iter);
+		}
+
+		return result;
+	}
+
+	Node* findChild(const std::function<bool(Node*)>& lambda)
+	{
+		auto children = findChildren(lambda);
+		Q_ASSERT(children.size() <= 1);
+		return children.first();
+	}
+
+	int parentRow() const
+	{
+		return _parent ?
+			_parent->_children.indexOf(const_cast<Node*>(this)) :
+			0;
+	}
+
+	int childCount() const
+	{
+		return _children.size();
+	}
+
+	bool hasChildren() const
+	{
+		return !_children.isEmpty();
+	}
+
+	QVariant& data(Qt::ItemDataRole role)
+	{
+		return _data[role];
+	}
+
+private:
+	Node* _parent;
+	QVector<Node*> _children;
+	QMap<Qt::ItemDataRole, QVariant> _data;
+};
+
 
 ResultModel::ResultModel(QObject *parent) :
 	QAbstractItemModel(parent),
@@ -38,15 +124,9 @@ QModelIndex ResultModel::index(int row, int column, const QModelIndex& parentInd
 		return QModelIndex();
 	}
 
-	Node* parentNode = parentIndex.isValid() ?
-		static_cast<Node*>(parentIndex.internalPointer()) :
-		_root;
-
-	Node* childItem = parentNode->_children.at(row);
-
-	return childItem ?
-		createIndex(row, column, childItem) :
-		QModelIndex();
+	Node* parent= parentIndex.isValid() ? indexToNode(parentIndex) : _root;
+	Node* child = parent ->childAt(row);
+	return child ? createIndex(row, column, child) : QModelIndex();
 }
 
 QModelIndex ResultModel::parent(const QModelIndex& childIndex) const
@@ -56,7 +136,7 @@ QModelIndex ResultModel::parent(const QModelIndex& childIndex) const
 		return QModelIndex();
 	}
 
-	Node* parentNode = static_cast<Node*>(childIndex.internalPointer())->_parent;
+	Node* parentNode = indexToNode(childIndex)->parent();
 
 	return parentNode != _root ?
 		createIndex(parentNode->parentRow(), 0, parentNode) :
@@ -65,9 +145,9 @@ QModelIndex ResultModel::parent(const QModelIndex& childIndex) const
 
 int ResultModel::rowCount(const QModelIndex& parentIndex) const
 {
-	return parentIndex.isValid() ?
-		static_cast<Node *>(parentIndex.internalPointer())->_children.size() :
-		_root->_children.size();
+	return parentIndex.isValid() ? 
+		indexToNode(parentIndex)->childCount() :
+		_root->childCount();
 }
 
 int ResultModel::columnCount(const QModelIndex&) const
@@ -82,8 +162,8 @@ QVariant ResultModel::data(const QModelIndex& index, int role) const
 		return QVariant();
 	}
 
-	Node* item = static_cast<Node*>(index.internalPointer());
-	bool topLevel = item->_parent == _root;
+	Node* item = indexToNode(index);
+	bool topLevel = item->parent() == _root;
 	bool hashCell = index.column() == 0 && topLevel;
 	bool pathCell = index.column() == 1 && !topLevel;
 
@@ -91,7 +171,7 @@ QVariant ResultModel::data(const QModelIndex& index, int role) const
 	{
 		if (hashCell || pathCell)
 		{
-			return item->_data[Qt::DisplayRole];
+			return item->data(Qt::DisplayRole);
 		}
 	}
 
@@ -99,7 +179,7 @@ QVariant ResultModel::data(const QModelIndex& index, int role) const
 	{
 		if (pathCell)
 		{
-			return item->_data[Qt::CheckStateRole];
+			return item->data(Qt::CheckStateRole);
 		}
 	}
 
@@ -108,13 +188,13 @@ QVariant ResultModel::data(const QModelIndex& index, int role) const
 
 bool ResultModel::setData(const QModelIndex& index, const QVariant& value, int role)
 {
-	Node* item = static_cast<Node*>(index.internalPointer());
-	bool topLevel = item->_parent == _root;
+	Node* item = indexToNode(index);
+	bool topLevel = item->parent() == _root;
 	bool pathCell = index.column() == 1 && !topLevel;
 
 	if (role == Qt::CheckStateRole && pathCell)
 	{
-		item->_data[Qt::CheckStateRole] = value;
+		item->data(Qt::CheckStateRole) = value;
 		emit dataChanged(index, index);
 		return true;
 	}
@@ -160,26 +240,26 @@ void ResultModel::clear()
 
 void ResultModel::addPath(const QString& hash, const QString& filePath)
 {
-	if (_root->_children.isEmpty())
+	if (!_root->hasChildren())
 	{
 		beginInsertRows(QModelIndex(), 0, 1);
 		auto hashNode = new Node(_root, { { Qt::DisplayRole, hash } });
-		hashNode->_children.append(
+		hashNode->appendChild(
 			new Node(hashNode, { { Qt::DisplayRole, filePath }, { Qt::CheckStateRole, false } }));
-		_root->_children.append(hashNode);
+		_root->appendChild(hashNode);
 		endInsertRows();
 	}
 	else
 	{
-		auto iter = std::find_if(_root->_children.begin(), _root->_children.end(), [&](const Node* hashNode)
+		Node* hashNode = _root->findChild([&hash](Node* node)
 		{
-			return hashNode->_data[Qt::DisplayRole] == hash;
+			return node->data(Qt::DisplayRole).toString() == hash;
 		});
 
-		if (iter != _root->_children.end())
+		if (hashNode)
 		{
-			(*iter)->_children.append(
-				new Node(*iter, { { Qt::DisplayRole, filePath }, { Qt::CheckStateRole, false } }));
+			hashNode->appendChild(
+				new Node(hashNode, { { Qt::DisplayRole, filePath }, { Qt::CheckStateRole, false } }));
 		}
 	}
 }
@@ -188,17 +268,22 @@ QStringList ResultModel::selectedPaths() const
 {
 	QStringList results;
 
-	for (Node* hashNode : _root->_children)
+	for (int i = 0; i < _root->childCount(); ++i)
 	{
-		for (Node* pathNode : hashNode->_children)
+		Node* hashNode = _root->childAt(i);
+		
+		auto result = hashNode->findChildren([&](Node* pathNode)->bool
 		{
-			if (pathNode->_data[Qt::CheckStateRole] == Qt::Checked)
-			{
-				results.append(pathNode->_data[Qt::DisplayRole].toString());
-			}
+			return pathNode->data(Qt::CheckStateRole) == Qt::CheckState::Checked;
+		});
+
+		for (Node* pathNode : result)
+		{
+			results.append(pathNode->data(Qt::DisplayRole).toString());
 		}
 	}
 
+	qDebug() << results;
 	return results;
 }
 
@@ -206,30 +291,21 @@ void ResultModel::removePath(const QString& filePath)
 {
 	beginResetModel();
 
-	for (int i = 0; i < _root->_children.size();)
+	for (int i = 0; i < _root->childCount(); ++i)
 	{
-		Node* hashNode = _root->_children[i];
+		Node* hashNode = _root->childAt(i);
 
-		for (int j = 0; j < hashNode->_children.size();)
+		auto result = hashNode->takeChildren([&](Node* pathNode)->bool
 		{
-			Node* pathNode = hashNode->_children[j];
+			return pathNode->data(Qt::DisplayRole).toString() == filePath;
+		});
 
-			if (pathNode->_data[Qt::DisplayRole].toString() != filePath)
-			{
-				++j;
-				continue;
-			}
+		qDeleteAll(result);
 
-			delete hashNode->_children.takeAt(j);
-		}
-
-		if (!hashNode->_children.isEmpty())
+		if (!hashNode->hasChildren())
 		{
-			++i;
-			continue;
+			delete _root->takeChild(i);
 		}
-
-		delete _root->_children.takeAt(i);
 	}
 
 	endResetModel();
