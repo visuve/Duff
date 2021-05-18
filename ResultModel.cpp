@@ -56,9 +56,11 @@ public:
 		return result;
 	}
 
-	void appendChild(Node* child)
+	Node* appendChild(const QMap<Qt::ItemDataRole, QVariant>& data)
 	{
+		Node* child = new Node(this, data);
 		_children.append(child);
+		return child;
 	}
 
 	QVector<Node*> findChildren(const std::function<bool(Node*)>& lambda) const
@@ -265,10 +267,10 @@ void ResultModel::addPath(const QString& hash, const QString& filePath)
 	if (!_root->hasChildren())
 	{
 		beginInsertRows(QModelIndex(), 0, 1);
-		auto hashNode = new Node(_root, { { Qt::DisplayRole, hash } });
-		hashNode->appendChild(
-			new Node(hashNode, { { Qt::DisplayRole, filePath }, { Qt::CheckStateRole, false } }));
-		_root->appendChild(hashNode);
+
+		Node* hashNode = _root->appendChild({ { Qt::DisplayRole, hash } });
+		hashNode->appendChild({ { Qt::DisplayRole, filePath }, { Qt::CheckStateRole, false } });
+
 		endInsertRows();
 	}
 	else
@@ -280,8 +282,7 @@ void ResultModel::addPath(const QString& hash, const QString& filePath)
 
 		if (hashNode)
 		{
-			hashNode->appendChild(
-				new Node(hashNode, { { Qt::DisplayRole, filePath }, { Qt::CheckStateRole, false } }));
+			hashNode->appendChild({ { Qt::DisplayRole, filePath }, { Qt::CheckStateRole, false } });
 		}
 	}
 }
