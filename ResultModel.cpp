@@ -23,12 +23,12 @@ public:
 		qDebug() << _data[Qt::DisplayRole];
 	}
 
-	Node* parent() const
+	const Node* parent() const
 	{
 		return _parent;
 	}
 
-	Node* childAt(int index)
+	Node* childAt(int index) const
 	{
 		return _children.at(index);
 	}
@@ -58,11 +58,11 @@ public:
 		_children.append(child);
 	}
 
-	QVector<Node*> findChildren(const std::function<bool(Node*)>& lambda)
+	QVector<Node*> findChildren(const std::function<bool(Node*)>& lambda) const
 	{
 		QVector<Node*> results;
 		QQueue<Node*> queue;
-		queue.enqueue(this);
+		queue.enqueue(const_cast<Node*>(this));
 
 		while (!queue.empty())
 		{
@@ -82,7 +82,7 @@ public:
 		return results;
 	}
 
-	Node* findChild(const std::function<bool(Node*)>& lambda)
+	Node* findChild(const std::function<bool(Node*)>& lambda) const
 	{
 		auto children = findChildren(lambda);
 		Q_ASSERT(children.size() <= 1);
@@ -91,9 +91,7 @@ public:
 
 	int parentRow() const
 	{
-		return _parent ?
-			_parent->_children.indexOf(const_cast<Node*>(this)) :
-			0;
+		return _parent ? _parent->_children.indexOf(this) : 0;
 	}
 
 	int childCount() const
@@ -112,7 +110,7 @@ public:
 	}
 
 private:
-	Node* _parent;
+	const Node* _parent;
 	QVector<Node*> _children;
 	QMap<Qt::ItemDataRole, QVariant> _data;
 };
@@ -148,7 +146,7 @@ QModelIndex ResultModel::parent(const QModelIndex& childIndex) const
 		return QModelIndex();
 	}
 
-	Node* parentNode = indexToNode(childIndex)->parent();
+	const Node* parentNode = indexToNode(childIndex)->parent();
 
 	return parentNode != _root ?
 		createIndex(parentNode->parentRow(), 0, parentNode) :
