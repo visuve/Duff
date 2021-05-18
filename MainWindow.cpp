@@ -59,7 +59,9 @@ MainWindow::MainWindow(QWidget* parent) :
 
 	if (args.count() == 2 && QDir().exists(args[1]))
 	{
-		populateTree(args[1]);
+		const QString& path = args[1];
+		ui->lineEditSelectedDirectory->setText(path);
+		populateTree(path);
 	}
 }
 
@@ -121,6 +123,7 @@ void MainWindow::onFinished()
 
 	ui->statusBar->showMessage(QTime::currentTime().toString() + " Finished processing.\n ");
 	ui->menuAlgorithm->setEnabled(true);
+	ui->treeViewResults->expandAll();
 }
 
 void MainWindow::deleteSelected()
