@@ -2,6 +2,7 @@
 #include "ResultModel.hpp"
 
 #include <QApplication>
+#include <QDebug>
 #include <QColor>
 #include <QPalette>
 #include <QQueue>
@@ -26,7 +27,7 @@ public:
 		qDebug() << _data[Qt::DisplayRole];
 	}
 
-	const Node* parent() const
+	Node* parent() const
 	{
 		return _parent;
 	}
@@ -58,9 +59,13 @@ public:
 
 	Node* appendChild(const QMap<Qt::ItemDataRole, QVariant>& data)
 	{
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 		Node* child = new Node(this, data);
 		_children.append(child);
 		return child;
+#else
+	return _children.emplaceBack(this, data);
+#endif
 	}
 
 	QVector<Node*> findChildren(const std::function<bool(Node*)>& lambda) const
@@ -96,7 +101,7 @@ public:
 
 	int parentRow() const
 	{
-		return _parent ? _parent->_children.indexOf(this) : 0;
+		return _parent ? _parent->_children.indexOf(const_cast<Node*>(this)) : 0;
 	}
 
 	int childCount() const
@@ -115,7 +120,7 @@ public:
 	}
 
 private:
-	const Node* _parent;
+	Node* _parent;
 	QVector<Node*> _children;
 	QMap<Qt::ItemDataRole, QVariant> _data;
 };
@@ -151,7 +156,7 @@ QModelIndex ResultModel::parent(const QModelIndex& childIndex) const
 		return QModelIndex();
 	}
 
-	const Node* parentNode = indexToNode(childIndex)->parent();
+	Node* parentNode = indexToNode(childIndex)->parent();
 
 	return parentNode != _root ?
 		createIndex(parentNode->parentRow(), 0, parentNode) :
@@ -160,7 +165,7 @@ QModelIndex ResultModel::parent(const QModelIndex& childIndex) const
 
 int ResultModel::rowCount(const QModelIndex& parentIndex) const
 {
-	return parentIndex.isValid() ? 
+	return parentIndex.isValid() ?
 		indexToNode(parentIndex)->childCount() :
 		_root->childCount();
 }
@@ -222,7 +227,7 @@ bool ResultModel::setData(const QModelIndex& index, const QVariant& value, int r
 		emit dataChanged(index, index);
 		return true;
 	}
-	
+
 	return false;
 }
 
