@@ -21,42 +21,10 @@ MainWindow::MainWindow(QWidget* parent) :
 {
 	ui->setupUi(this);
 
-	ui->actionOpen->setIcon(QApplication::style()->standardIcon(QStyle::SP_DirOpenIcon));
-	connect(ui->actionOpen, &QAction::triggered, this, &MainWindow::onOpenDirectoryDialog);
-
-	ui->actionExit->setIcon(QApplication::style()->standardIcon(QStyle::SP_DialogCloseButton));
-	connect(ui->actionExit, &QAction::triggered, qApp, &QApplication::quit);
-
-	ui->actionAbout->setIcon(QApplication::style()->standardIcon(QStyle::SP_MessageBoxInformation));
-	connect(ui->actionAbout, &QAction::triggered, this, &MainWindow::onAbout);
-
-	ui->actionLicenses->setIcon(QApplication::style()->standardIcon(QStyle::SP_TitleBarMenuButton));
-	connect(ui->actionLicenses, &QAction::triggered, [this]()
-	{
-		QMessageBox::aboutQt(this, "Duff");
-	});
+	initMenuBar();
 
 	ui->treeViewResults->setContextMenuPolicy(Qt::CustomContextMenu);
 	connect(ui->treeViewResults, &QTreeWidget::customContextMenuRequested, this, &MainWindow::createFileContextMenu);
-
-	auto algorithmGroup = new QActionGroup(this);
-	algorithmGroup->addAction(ui->actionMD5);
-	algorithmGroup->addAction(ui->actionSHA_1);
-	algorithmGroup->addAction(ui->actionSHA_256);
-	algorithmGroup->addAction(ui->actionSHA_512);
-	algorithmGroup->setExclusive(true);
-
-	connect(ui->actionMD5, &QAction::triggered,
-			std::bind(&HashCalculator::setAlgorithm, _hashCalculator, QCryptographicHash::Algorithm::Md5));
-	connect(ui->actionSHA_1, &QAction::triggered,
-			std::bind(&HashCalculator::setAlgorithm, _hashCalculator, QCryptographicHash::Algorithm::Sha1));
-	connect(ui->actionSHA_256, &QAction::triggered,
-			std::bind(&HashCalculator::setAlgorithm, _hashCalculator, QCryptographicHash::Algorithm::Sha256));
-	connect(ui->actionSHA_512, &QAction::triggered,
-			std::bind(&HashCalculator::setAlgorithm, _hashCalculator, QCryptographicHash::Algorithm::Sha512));
-
-	ui->actionSHA_256->setChecked(true);
-
 	ui->treeViewResults->setModel(_model);
 
 	connect(_hashCalculator, &HashCalculator::processing, this, &MainWindow::onProcessing);
@@ -83,38 +51,9 @@ MainWindow::MainWindow(QWidget* parent) :
 		ui->lineEditSelectedDirectory->setPalette(palette);
 	});
 
-	auto emptyState = new QState();
-	emptyState->assignProperty(ui->pushButtonFindDuplicates, "enabled", false);
-	emptyState->assignProperty(ui->lineEditSelectedDirectory, "enabled", true);
-	emptyState->setObjectName("empty");
-
-	auto readyState = new QState();
-	readyState->assignProperty(ui->pushButtonFindDuplicates, "text", "Find duplicates");
-	readyState->assignProperty(ui->pushButtonFindDuplicates, "enabled", true);
-	readyState->assignProperty(ui->lineEditSelectedDirectory, "enabled", true);
-	readyState->setObjectName("ready");
-
-	auto runningState = new QState();
-	runningState->assignProperty(ui->pushButtonFindDuplicates, "text", "Cancel");
-	runningState->assignProperty(ui->lineEditSelectedDirectory, "enabled", false);
-	runningState->setObjectName("running");
-
-	emptyState->addTransition(this, &MainWindow::inputReady, readyState);
-	readyState->addTransition(this, &MainWindow::inputIncomplete, emptyState);
-	readyState->addTransition(ui->pushButtonFindDuplicates, &QAbstractButton::clicked, runningState);
-	runningState->addTransition(_hashCalculator, &HashCalculator::finished, readyState);
-	runningState->addTransition(ui->pushButtonFindDuplicates, &QAbstractButton::clicked, readyState);
-
-	connect(readyState, &QState::entered, _hashCalculator, &QThread::requestInterruption);
-	connect(runningState, &QState::entered, this, &MainWindow::onFindDuplicates);
-
-	_machine.addState(emptyState);
-	_machine.addState(readyState);
-	_machine.addState(runningState);
-	_machine.setInitialState(emptyState);
-	_machine.start();
-
 	connect(ui->pushButtonDeleteSelected, &QPushButton::clicked, this, &MainWindow::deleteSelected);
+
+	initStateMachine();
 
 	const QStringList args = QCoreApplication::arguments();
 
@@ -254,6 +193,76 @@ void MainWindow::deleteSelected()
 
 		_model->removePath(filePath);
 	}
+}
+
+void MainWindow::initMenuBar()
+{
+	ui->actionOpen->setIcon(QApplication::style()->standardIcon(QStyle::SP_DirOpenIcon));
+	connect(ui->actionOpen, &QAction::triggered, this, &MainWindow::onOpenDirectoryDialog);
+
+	ui->actionExit->setIcon(QApplication::style()->standardIcon(QStyle::SP_DialogCloseButton));
+	connect(ui->actionExit, &QAction::triggered, qApp, &QApplication::quit);
+
+	ui->actionAbout->setIcon(QApplication::style()->standardIcon(QStyle::SP_MessageBoxInformation));
+	connect(ui->actionAbout, &QAction::triggered, this, &MainWindow::onAbout);
+
+	ui->actionLicenses->setIcon(QApplication::style()->standardIcon(QStyle::SP_TitleBarMenuButton));
+	connect(ui->actionLicenses, &QAction::triggered, [this]()
+	{
+		QMessageBox::aboutQt(this, "Duff");
+	});
+
+	auto algorithmGroup = new QActionGroup(this);
+	algorithmGroup->addAction(ui->actionMD5);
+	algorithmGroup->addAction(ui->actionSHA_1);
+	algorithmGroup->addAction(ui->actionSHA_256);
+	algorithmGroup->addAction(ui->actionSHA_512);
+	algorithmGroup->setExclusive(true);
+
+	connect(ui->actionMD5, &QAction::triggered,
+		std::bind(&HashCalculator::setAlgorithm, _hashCalculator, QCryptographicHash::Algorithm::Md5));
+	connect(ui->actionSHA_1, &QAction::triggered,
+		std::bind(&HashCalculator::setAlgorithm, _hashCalculator, QCryptographicHash::Algorithm::Sha1));
+	connect(ui->actionSHA_256, &QAction::triggered,
+		std::bind(&HashCalculator::setAlgorithm, _hashCalculator, QCryptographicHash::Algorithm::Sha256));
+	connect(ui->actionSHA_512, &QAction::triggered,
+		std::bind(&HashCalculator::setAlgorithm, _hashCalculator, QCryptographicHash::Algorithm::Sha512));
+
+	ui->actionSHA_256->setChecked(true);
+}
+
+void MainWindow::initStateMachine()
+{
+	auto emptyState = new QState();
+	emptyState->assignProperty(ui->pushButtonFindDuplicates, "enabled", false);
+	emptyState->assignProperty(ui->lineEditSelectedDirectory, "enabled", true);
+	emptyState->setObjectName("empty");
+
+	auto readyState = new QState();
+	readyState->assignProperty(ui->pushButtonFindDuplicates, "text", "Find duplicates");
+	readyState->assignProperty(ui->pushButtonFindDuplicates, "enabled", true);
+	readyState->assignProperty(ui->lineEditSelectedDirectory, "enabled", true);
+	readyState->setObjectName("ready");
+
+	auto runningState = new QState();
+	runningState->assignProperty(ui->pushButtonFindDuplicates, "text", "Cancel");
+	runningState->assignProperty(ui->lineEditSelectedDirectory, "enabled", false);
+	runningState->setObjectName("running");
+
+	emptyState->addTransition(this, &MainWindow::inputReady, readyState);
+	readyState->addTransition(this, &MainWindow::inputIncomplete, emptyState);
+	readyState->addTransition(ui->pushButtonFindDuplicates, &QAbstractButton::clicked, runningState);
+	runningState->addTransition(_hashCalculator, &HashCalculator::finished, readyState);
+	runningState->addTransition(ui->pushButtonFindDuplicates, &QAbstractButton::clicked, readyState);
+
+	connect(readyState, &QState::entered, _hashCalculator, &QThread::requestInterruption);
+	connect(runningState, &QState::entered, this, &MainWindow::onFindDuplicates);
+
+	_machine.addState(emptyState);
+	_machine.addState(readyState);
+	_machine.addState(runningState);
+	_machine.setInitialState(emptyState);
+	_machine.start();
 }
 
 void MainWindow::populateTree(const QString& directory)

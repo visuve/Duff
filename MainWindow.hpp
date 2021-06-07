@@ -35,6 +35,8 @@ signals:
 	void inputIncomplete();
 
 private:
+	void initMenuBar();
+	void initStateMachine();
 	void populateTree(const QString& directory);
 	void createFileContextMenu(const QPoint& pos);
 	void openFileWithDefaultAssociation(const QString& filePath);
