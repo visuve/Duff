@@ -4,6 +4,7 @@
 #include <QDirIterator>
 #include <QMap>
 #include <QStringList>
+#include <array>
 
 HashCalculator::HashCalculator(QObject* parent) :
 	QThread(parent)
@@ -39,15 +40,31 @@ QByteArray HashCalculator::calculateHash(const QString& filePath)
 		return {};
 	}
 
+	QCryptographicHash hash(_algorithm);
+	constexpr int BufferSize = 0x10000; // 64K
+	thread_local std::array<char, BufferSize> buffer = {};
+	qint64 bytesRead = 0;
+
 	emit processing(filePath);
 
-	QCryptographicHash hash(_algorithm);
-
-	if (!hash.addData(&file))
+	do
 	{
-		qWarning() << "Failed to process: " << filePath;
-		return {};
+		if (QThread::currentThread()->isInterruptionRequested())
+		{
+			return {};
+		}
+
+		bytesRead = file.read(buffer.data(), BufferSize);
+
+		if (bytesRead < 0)
+		{
+			qWarning() << "Failed to process: " << filePath;
+			return {};
+		}
+
+		hash.addData(buffer.data(), bytesRead);
 	}
+	while (bytesRead > 0);
 
 	return hash.result().toHex();
 }
