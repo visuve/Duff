@@ -8,6 +8,7 @@ namespace Ui
 	class MainWindow;
 }
 
+class HashCalculator;
 class ResultModel;
 
 class MainWindow : public QMainWindow
@@ -34,6 +35,6 @@ private:
 	void openParentDirectory(const QString& filePath);
 	bool removeFile(const QString& filePath);
 
-	QCryptographicHash::Algorithm _algorithm = QCryptographicHash::Sha256;
+	HashCalculator* _hashCalculator;
 	ResultModel* _model = nullptr;
 };

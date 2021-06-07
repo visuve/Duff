@@ -5,20 +5,10 @@
 #include <QMap>
 #include <QStringList>
 
-HashCalculator::HashCalculator(QObject* parent, const QString& directory, QCryptographicHash::Algorithm algorithm) :
-	QThread(parent),
-	_directory(directory),
-	_algorithm(algorithm)
+HashCalculator::HashCalculator(QObject* parent) :
+	QThread(parent)
 {
-	connect(this, &QThread::terminate, []()
-	{
-		qDebug() << "Terminate requested";
-	});
-
-	connect(this, &QThread::quit, []()
-	{
-		qDebug() << "Quit requested";
-	});
+	qDebug();
 }
 
 HashCalculator::~HashCalculator()
@@ -27,6 +17,16 @@ HashCalculator::~HashCalculator()
 	requestInterruption();
 	wait();
 	qDebug() << "Destroyed.";
+}
+
+void HashCalculator::setDirectory(const QString& directory)
+{
+	_directory = directory;
+}
+
+void HashCalculator::setAlgorithm(QCryptographicHash::Algorithm algorithm)
+{
+	_algorithm = algorithm;
 }
 
 QByteArray HashCalculator::calculateHash(const QString& filePath)

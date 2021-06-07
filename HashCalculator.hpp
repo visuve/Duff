@@ -9,8 +9,11 @@ class HashCalculator : public QThread
 	Q_OBJECT
 
 public:
-	HashCalculator(QObject* parent, const QString& directory, QCryptographicHash::Algorithm algorithm);
+	HashCalculator(QObject* parent);
 	~HashCalculator();
+
+	void setDirectory(const QString& directory);
+	void setAlgorithm(QCryptographicHash::Algorithm algorithm);
 
 signals:
 	void processing(const QString& filePath);
@@ -20,6 +23,6 @@ private:
 	QByteArray calculateHash(const QString& filePath);
 	void run() override;
 
-	const QString _directory;
-	const QCryptographicHash::Algorithm _algorithm;
+	QString _directory;
+	QCryptographicHash::Algorithm _algorithm = QCryptographicHash::Sha256;
 };

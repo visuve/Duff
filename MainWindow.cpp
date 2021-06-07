@@ -15,6 +15,7 @@
 MainWindow::MainWindow(QWidget* parent) :
 	QMainWindow(parent),
 	ui(new Ui::MainWindow()),
+	_hashCalculator(new HashCalculator(this)),
 	_model(new ResultModel(this))
 {
 	ui->setupUi(this);
@@ -43,17 +44,30 @@ MainWindow::MainWindow(QWidget* parent) :
 	algorithmGroup->addAction(ui->actionSHA_256);
 	algorithmGroup->addAction(ui->actionSHA_512);
 	algorithmGroup->setExclusive(true);
-	ui->actionSHA_256->setChecked(true);
 
-	connect(ui->actionMD5, &QAction::triggered, [this]() { _algorithm = QCryptographicHash::Algorithm::Md5; });
-	connect(ui->actionSHA_1, &QAction::triggered, [this]() { _algorithm = QCryptographicHash::Algorithm::Sha1; });
-	connect(ui->actionSHA_256, &QAction::triggered, [this]() { _algorithm = QCryptographicHash::Algorithm::Sha256; });
-	connect(ui->actionSHA_512, &QAction::triggered, [this]() { _algorithm = QCryptographicHash::Algorithm::Sha512; });
+	connect(ui->actionMD5, &QAction::triggered,
+			std::bind(&HashCalculator::setAlgorithm, _hashCalculator, QCryptographicHash::Algorithm::Md5));
+	connect(ui->actionSHA_1, &QAction::triggered,
+			std::bind(&HashCalculator::setAlgorithm, _hashCalculator, QCryptographicHash::Algorithm::Sha1));
+	connect(ui->actionSHA_256, &QAction::triggered,
+			std::bind(&HashCalculator::setAlgorithm, _hashCalculator, QCryptographicHash::Algorithm::Sha256));
+	connect(ui->actionSHA_512, &QAction::triggered,
+			std::bind(&HashCalculator::setAlgorithm, _hashCalculator, QCryptographicHash::Algorithm::Sha512));
+
+	ui->actionSHA_256->setChecked(true);
 
 	connect(ui->pushButtonFindDuplicates, &QPushButton::clicked, this, &MainWindow::onFindDuplicates);
 	connect(ui->pushButtonDeleteSelected, &QPushButton::clicked, this, &MainWindow::deleteSelected);
 
 	ui->treeViewResults->setModel(_model);
+
+	connect(_hashCalculator, &HashCalculator::processing, [this](const QString& filePath)
+	{
+		ui->statusBar->showMessage(QTime::currentTime().toString() + " Processing: " + filePath);
+	});
+
+	connect(_hashCalculator, &HashCalculator::duplicateFound, this, &MainWindow::onDuplicateFound);
+	connect(_hashCalculator, &HashCalculator::finished, this, &MainWindow::onFinished);
 
 	const QStringList args = QCoreApplication::arguments();
 
@@ -161,18 +175,8 @@ void MainWindow::populateTree(const QString& directory)
 {
 	_model->clear();
 	ui->menuAlgorithm->setEnabled(false);
-
-	auto hashCalculator = new HashCalculator(this, directory, _algorithm);
-	connect(hashCalculator, &HashCalculator::processing, [this](const QString& filePath)
-	{
-		ui->statusBar->showMessage(QTime::currentTime().toString() + " Processing: " + filePath);
-	});
-
-	connect(hashCalculator, &HashCalculator::duplicateFound, this, &MainWindow::onDuplicateFound);
-	connect(hashCalculator, &HashCalculator::finished, this, &MainWindow::onFinished);
-	connect(hashCalculator, &HashCalculator::finished, hashCalculator, &QObject::deleteLater);
-
-	hashCalculator->start();
+	_hashCalculator->setDirectory(directory);
+	_hashCalculator->start();
 }
 
 void MainWindow::createFileContextMenu(const QPoint& pos)
