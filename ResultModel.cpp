@@ -93,8 +93,7 @@ public:
 	Node* findChild(const std::function<bool(Node*)>& lambda) const
 	{
 		auto children = findChildren(lambda);
-		Q_ASSERT(children.size() <= 1);
-		return children.first();
+		return children.isEmpty() ? nullptr : children.first();
 	}
 
 	int parentRow() const

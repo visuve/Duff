@@ -67,7 +67,7 @@ void HashCalculator::run()
 			continue;
 		}
 
-		fileHashes[fileHash] << (path);
+		fileHashes[fileHash] << path;
 		int size = fileHashes[fileHash].size();
 
 		if (size == 2)
