@@ -10,6 +10,7 @@
 #include <QFileDialog>
 #include <QMessageBox>
 #include <QTime>
+#include <QTimer>
 #include <QTreeWidgetItem>
 
 MainWindow::MainWindow(QWidget* parent) :
@@ -66,15 +67,6 @@ MainWindow::MainWindow(QWidget* parent) :
 	connect(_hashCalculator, &HashCalculator::duplicateFound, this, &MainWindow::onDuplicateFound);
 	connect(_hashCalculator, &HashCalculator::finished, this, &MainWindow::onFinished);
 
-	const QStringList args = QCoreApplication::arguments();
-
-	if (args.count() == 2 && QDir().exists(args[1]))
-	{
-		const QString& path = args[1];
-		ui->lineEditSelectedDirectory->setText(path);
-		populateTree(path);
-	}
-
 	connect(ui->lineEditSelectedDirectory, &QLineEdit::textChanged, [this](const QString& text)
 	{
 		const QFileInfo info(text);
@@ -115,21 +107,24 @@ MainWindow::MainWindow(QWidget* parent) :
 	runningState->addTransition(_hashCalculator, &HashCalculator::finished, readyState);
 	runningState->addTransition(ui->pushButtonFindDuplicates, &QAbstractButton::clicked, readyState);
 
-	connect(readyState, &QState::entered, [this]()
-	{
-		_hashCalculator->requestInterruption();
-	});
-
+	connect(readyState, &QState::entered, _hashCalculator, &QThread::requestInterruption);
 	connect(runningState, &QState::entered, this, &MainWindow::onFindDuplicates);
 
 	_machine.addState(emptyState);
 	_machine.addState(readyState);
 	_machine.addState(runningState);
-
 	_machine.setInitialState(emptyState);
 	_machine.start();
 
 	connect(ui->pushButtonDeleteSelected, &QPushButton::clicked, this, &MainWindow::deleteSelected);
+
+	const QStringList args = QCoreApplication::arguments();
+
+	if (args.count() == 2)
+	{
+		// TODO: investigate why this does not work when called directly
+		 QTimer::singleShot(100, std::bind(&QLineEdit::setText, ui->lineEditSelectedDirectory, args[1]));
+	}
 }
 
 MainWindow::~MainWindow()
@@ -174,8 +169,8 @@ void MainWindow::onFindDuplicates()
 void MainWindow::onDuplicateFound(const QString& hashString, const QString& filePath)
 {
 	qDebug() << hashString << filePath;
-	ui->statusBar->showMessage(QTime::currentTime().toString() + " Found duplicate: " + filePath + " -> " + hashString);
 	_model->addPath(hashString, filePath);
+	ui->statusBar->showMessage(QTime::currentTime().toString() + " Found duplicate: " + filePath + " -> " + hashString);
 }
 
 void MainWindow::onFinished()
@@ -188,9 +183,9 @@ void MainWindow::onFinished()
 			"No duplicate files were found.\n");
 	}
 
-	ui->statusBar->showMessage(QTime::currentTime().toString() + " Finished processing.\n ");
 	ui->menuAlgorithm->setEnabled(true);
 	ui->treeViewResults->expandAll();
+	ui->statusBar->showMessage(QTime::currentTime().toString() + " Finished processing.\n ");
 }
 
 void MainWindow::deleteSelected()
