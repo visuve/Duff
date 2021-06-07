@@ -64,6 +64,7 @@ MainWindow::MainWindow(QWidget* parent) :
 		ui->statusBar->showMessage(QTime::currentTime().toString() + " Processing: " + filePath);
 	});
 
+	connect(_hashCalculator, &HashCalculator::duplicateFound, _model, &ResultModel::addPath);
 	connect(_hashCalculator, &HashCalculator::duplicateFound, this, &MainWindow::onDuplicateFound);
 	connect(_hashCalculator, &HashCalculator::finished, this, &MainWindow::onFinished);
 
@@ -168,8 +169,6 @@ void MainWindow::onFindDuplicates()
 
 void MainWindow::onDuplicateFound(const QString& hashString, const QString& filePath)
 {
-	qDebug() << hashString << filePath;
-	_model->addPath(hashString, filePath);
 	ui->statusBar->showMessage(QTime::currentTime().toString() + " Found duplicate: " + filePath + " -> " + hashString);
 }
 

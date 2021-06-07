@@ -257,27 +257,19 @@ void ResultModel::clear()
 
 void ResultModel::addPath(const QString& hash, const QString& filePath)
 {
-	if (!_root->hasChildren())
+	Node* hashNode = _root->findChild([&hash](Node* node)
 	{
-		beginInsertRows(QModelIndex(), 0, 1);
+		return node->data(Qt::DisplayRole).toString() == hash;
+	});
 
-		Node* hashNode = _root->appendChild({ { Qt::DisplayRole, hash } });
-		hashNode->appendChild({ { Qt::DisplayRole, filePath }, { Qt::CheckStateRole, false } });
-
-		endInsertRows();
-	}
-	else
+	if (!hashNode)
 	{
-		Node* hashNode = _root->findChild([&hash](Node* node)
-		{
-			return node->data(Qt::DisplayRole).toString() == hash;
-		});
-
-		if (hashNode)
-		{
-			hashNode->appendChild({ { Qt::DisplayRole, filePath }, { Qt::CheckStateRole, false } });
-		}
+		hashNode = _root->appendChild({ { Qt::DisplayRole, hash } });
 	}
+
+	beginInsertRows(QModelIndex(), 0, 1);
+	hashNode->appendChild({ { Qt::DisplayRole, filePath }, { Qt::CheckStateRole, false } });
+	endInsertRows();
 }
 
 QStringList ResultModel::selectedPaths() const
