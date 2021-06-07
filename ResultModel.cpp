@@ -57,13 +57,9 @@ public:
 
 	Node* appendChild(const QMap<Qt::ItemDataRole, QVariant>& data)
 	{
-#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
 		Node* child = new Node(this, data);
 		_children.append(child);
 		return child;
-#else
-	return _children.emplaceBack(this, data);
-#endif
 	}
 
 	QVector<Node*> findChildren(const std::function<bool(Node*)>& lambda) const

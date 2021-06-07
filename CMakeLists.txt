@@ -14,6 +14,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 find_package(QT NAMES Qt6 Qt5 COMPONENTS Widgets REQUIRED)
 find_package(Qt${QT_VERSION_MAJOR} COMPONENTS Widgets REQUIRED)
 
+if (Qt6_FOUND)
+	find_package(Qt6 COMPONENTS StateMachine REQUIRED)
+endif()
+
 file(GLOB DUFF_SOURCES "*.cpp" "*.hpp" ".ui" "*.qrc")
 
 if (MSVC)
@@ -26,3 +30,7 @@ else()
 endif()
 
 target_link_libraries(${DUFF_EXECUTABLE} PRIVATE Qt${QT_VERSION_MAJOR}::Widgets)
+
+if (Qt6_FOUND)
+	target_link_libraries(${DUFF_EXECUTABLE} PRIVATE Qt6::StateMachine)
+endif()
