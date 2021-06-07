@@ -3,8 +3,6 @@
 
 #include <QApplication>
 #include <QDebug>
-#include <QColor>
-#include <QPalette>
 #include <QQueue>
 
 inline Node* indexToNode(const QModelIndex& index)
@@ -192,15 +190,6 @@ QVariant ResultModel::data(const QModelIndex& index, int role) const
 		if (hashCell || pathCell)
 		{
 			return item->data(Qt::DisplayRole);
-		}
-	}
-
-	if (role == Qt::BackgroundRole)
-	{
-		if (!topLevel)
-		{
-			static const QPalette& palette = QApplication::palette();
-			return index.row() % 2 ? palette.dark() : palette.midlight();
 		}
 	}
 

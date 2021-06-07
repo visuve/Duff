@@ -26,7 +26,11 @@
      <widget class="QLineEdit" name="lineEditSelectedDirectory"/>
     </item>
     <item row="1" column="0" colspan="3">
-     <widget class="QTreeView" name="treeViewResults"/>
+     <widget class="QTreeView" name="treeViewResults">
+      <property name="alternatingRowColors">
+       <bool>true</bool>
+      </property>
+     </widget>
     </item>
     <item row="2" column="0">
      <widget class="QPushButton" name="pushButtonDeleteSelected">
@@ -63,7 +67,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>21</height>
+     <height>20</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
