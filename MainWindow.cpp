@@ -59,14 +59,11 @@ MainWindow::MainWindow(QWidget* parent) :
 
 	ui->treeViewResults->setModel(_model);
 
-	connect(_hashCalculator, &HashCalculator::processing, [this](const QString& filePath)
-	{
-		ui->statusBar->showMessage(QTime::currentTime().toString() + " Processing: " + filePath);
-	});
-
+	connect(_hashCalculator, &HashCalculator::processing, this, &MainWindow::onProcessing);
 	connect(_hashCalculator, &HashCalculator::duplicateFound, _model, &ResultModel::addPath);
 	connect(_hashCalculator, &HashCalculator::duplicateFound, this, &MainWindow::onDuplicateFound);
 	connect(_hashCalculator, &HashCalculator::finished, this, &MainWindow::onFinished);
+	connect(_hashCalculator, &HashCalculator::failure, this, &MainWindow::onFailure);
 
 	connect(ui->lineEditSelectedDirectory, &QLineEdit::textChanged, [this](const QString& text)
 	{
@@ -167,9 +164,27 @@ void MainWindow::onFindDuplicates()
 	populateTree(selectedDirectory);
 }
 
+void MainWindow::onProcessing(const QString& filePath, qint64 bytesRead, qint64 bytesLeft)
+{
+	const QString message =
+			QString("%1 Processing: %2 %3/%4")
+			.arg(QTime::currentTime().toString())
+			.arg(filePath)
+			.arg(locale().formattedDataSize(bytesRead))
+			.arg(locale().formattedDataSize(bytesLeft));
+
+	ui->statusBar->showMessage(message);
+}
+
 void MainWindow::onDuplicateFound(const QString& hashString, const QString& filePath)
 {
-	ui->statusBar->showMessage(QTime::currentTime().toString() + " Found duplicate: " + filePath + " -> " + hashString);
+	const QString message =
+		QString("%1 Found duplicate: %2 -> %3")
+			.arg(QTime::currentTime().toString())
+			.arg(filePath)
+			.arg(hashString);
+
+	ui->statusBar->showMessage(message);
 }
 
 void MainWindow::onFinished()
@@ -184,7 +199,25 @@ void MainWindow::onFinished()
 
 	ui->menuAlgorithm->setEnabled(true);
 	ui->treeViewResults->expandAll();
-	ui->statusBar->showMessage(QTime::currentTime().toString() + " Finished processing.\n ");
+
+	const QString message =
+		QString("%1 Finished searching: %2")
+			.arg(QTime::currentTime().toString())
+			.arg(ui->lineEditSelectedDirectory->text());
+
+	ui->statusBar->showMessage(message);
+}
+
+void MainWindow::onFailure(const QString& filePath)
+{
+	const QString message =
+		QString("%1 Failed to process %2")
+			.arg(QTime::currentTime().toString())
+			.arg(filePath);
+
+	ui->statusBar->showMessage(message);
+
+	qWarning() << "Failed to process:" << filePath;
 }
 
 void MainWindow::deleteSelected()

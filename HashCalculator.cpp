@@ -36,16 +36,23 @@ QByteArray HashCalculator::calculateHash(const QString& filePath)
 
 	if (!file.open(QFile::ReadOnly))
 	{
-		qWarning() << "Failed to open" << filePath;
+		emit failure(filePath);
 		return {};
 	}
 
 	QCryptographicHash hash(_algorithm);
 	constexpr int BufferSize = 0x10000; // 64K
 	thread_local std::array<char, BufferSize> buffer = {};
-	qint64 bytesRead = 0;
+	qint64 bytesReadTotal = 0;
+	const qint64 bytesLeft = file.size();
 
-	emit processing(filePath);
+	if (bytesLeft <= 0)
+	{
+		emit failure(filePath);
+		return {};
+	}
+
+	emit processing(filePath, bytesReadTotal, bytesLeft);
 
 	do
 	{
@@ -54,17 +61,19 @@ QByteArray HashCalculator::calculateHash(const QString& filePath)
 			return {};
 		}
 
-		bytesRead = file.read(buffer.data(), BufferSize);
+		qint64 bytesRead = file.read(buffer.data(), BufferSize);
 
 		if (bytesRead < 0)
 		{
-			qWarning() << "Failed to process: " << filePath;
+			emit failure(filePath);
 			return {};
 		}
 
+		bytesReadTotal += bytesRead;
 		hash.addData(buffer.data(), bytesRead);
+		emit processing(filePath, bytesReadTotal, bytesLeft);
 	}
-	while (bytesRead > 0);
+	while (bytesReadTotal < bytesLeft);
 
 	return hash.result().toHex();
 }

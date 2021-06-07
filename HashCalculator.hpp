@@ -16,8 +16,9 @@ public:
 	void setAlgorithm(QCryptographicHash::Algorithm algorithm);
 
 signals:
-	void processing(const QString& filePath);
+	void processing(const QString& filePath, qint64 bytesRead, qint64 bytesLeft);
 	void duplicateFound(const QString& hashString, const QString& filePath);
+	void failure(const QString& filePath);
 
 private:
 	QByteArray calculateHash(const QString& filePath);

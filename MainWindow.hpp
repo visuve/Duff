@@ -23,8 +23,10 @@ public:
 private slots:
 	void onOpenDirectoryDialog();
 	void onFindDuplicates();
+	void onProcessing(const QString& filePath, qint64 bytesRead, qint64 bytesLeft);
 	void onDuplicateFound(const QString& hashString, const QString& filePath);
 	void onFinished();
+	void onFailure(const QString& filePath);
 	void deleteSelected();
 	void onAbout();
 
