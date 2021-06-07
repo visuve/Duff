@@ -56,9 +56,6 @@ MainWindow::MainWindow(QWidget* parent) :
 
 	ui->actionSHA_256->setChecked(true);
 
-	connect(ui->pushButtonFindDuplicates, &QPushButton::clicked, this, &MainWindow::onFindDuplicates);
-	connect(ui->pushButtonDeleteSelected, &QPushButton::clicked, this, &MainWindow::deleteSelected);
-
 	ui->treeViewResults->setModel(_model);
 
 	connect(_hashCalculator, &HashCalculator::processing, [this](const QString& filePath)
@@ -77,6 +74,58 @@ MainWindow::MainWindow(QWidget* parent) :
 		ui->lineEditSelectedDirectory->setText(path);
 		populateTree(path);
 	}
+
+	connect(ui->lineEditSelectedDirectory, &QLineEdit::textChanged, [this](const QString& text)
+	{
+		const QFileInfo info(text);
+
+		if (info.isDir())
+		{
+			emit inputReady();
+		}
+		else
+		{
+			emit inputIncomplete();
+		}
+	});
+
+	auto emptyState = new QState();
+	emptyState->assignProperty(ui->pushButtonFindDuplicates, "enabled", false);
+	emptyState->assignProperty(ui->lineEditSelectedDirectory, "enabled", true);
+	emptyState->setObjectName("empty");
+
+	auto readyState = new QState();
+	readyState->assignProperty(ui->pushButtonFindDuplicates, "text", "Find duplicates");
+	readyState->assignProperty(ui->pushButtonFindDuplicates, "enabled", true);
+	readyState->assignProperty(ui->lineEditSelectedDirectory, "enabled", true);
+	readyState->setObjectName("ready");
+
+	auto runningState = new QState();
+	runningState->assignProperty(ui->pushButtonFindDuplicates, "text", "Cancel");
+	runningState->assignProperty(ui->lineEditSelectedDirectory, "enabled", false);
+	runningState->setObjectName("running");
+
+	emptyState->addTransition(this, &MainWindow::inputReady, readyState);
+	readyState->addTransition(this, &MainWindow::inputIncomplete, emptyState);
+	readyState->addTransition(ui->pushButtonFindDuplicates, &QAbstractButton::clicked, runningState);
+	runningState->addTransition(_hashCalculator, &HashCalculator::finished, readyState);
+	runningState->addTransition(ui->pushButtonFindDuplicates, &QAbstractButton::clicked, readyState);
+
+	connect(readyState, &QState::entered, [this]()
+	{
+		_hashCalculator->requestInterruption();
+	});
+
+	connect(runningState, &QState::entered, this, &MainWindow::onFindDuplicates);
+
+	_machine.addState(emptyState);
+	_machine.addState(readyState);
+	_machine.addState(runningState);
+
+	_machine.setInitialState(emptyState);
+	_machine.start();
+
+	connect(ui->pushButtonDeleteSelected, &QPushButton::clicked, this, &MainWindow::deleteSelected);
 }
 
 MainWindow::~MainWindow()
@@ -108,7 +157,7 @@ void MainWindow::onFindDuplicates()
 		onFindDuplicates();
 	}
 
-	if (!QDir().exists(selectedDirectory))
+	if (!QDir(selectedDirectory).exists())
 	{
 		QMessageBox::warning(this, "Selected directory", '"' + selectedDirectory + '"' + " does not appear to exist!");
 		onOpenDirectoryDialog();
@@ -142,10 +191,15 @@ void MainWindow::onFinished()
 
 void MainWindow::deleteSelected()
 {
-	QStringList filePaths = _model->selectedPaths();
+	const QStringList filePaths = _model->selectedPaths();
 
-	if (filePaths.empty() ||
-		QMessageBox::question(
+	if (filePaths.empty())
+	{
+		QMessageBox::warning(this, "Failed to remove file", "Nothing selected!\n");
+		return;
+	}
+
+	if (QMessageBox::question(
 			this,
 			"Confirm delete?",
 			"Are you sure you want to delete the following files:\n" + filePaths.join('\n')) !=

@@ -2,6 +2,7 @@
 
 #include <QMainWindow>
 #include <QCryptographicHash>
+#include <QStateMachine>
 
 namespace Ui
 {
@@ -27,14 +28,19 @@ private slots:
 	void deleteSelected();
 	void onAbout();
 
+signals:
+	void inputReady();
+	void inputIncomplete();
+
 private:
-	Ui::MainWindow* ui;
 	void populateTree(const QString& directory);
 	void createFileContextMenu(const QPoint& pos);
 	void openFileWithDefaultAssociation(const QString& filePath);
 	void openParentDirectory(const QString& filePath);
 	bool removeFile(const QString& filePath);
 
+	Ui::MainWindow* ui;
 	HashCalculator* _hashCalculator;
-	ResultModel* _model = nullptr;
+	ResultModel* _model;
+	QStateMachine _machine;
 };
