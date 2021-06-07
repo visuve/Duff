@@ -78,6 +78,7 @@ MainWindow::MainWindow(QWidget* parent) :
 	connect(ui->lineEditSelectedDirectory, &QLineEdit::textChanged, [this](const QString& text)
 	{
 		const QFileInfo info(text);
+		QPalette palette;
 
 		if (info.isDir())
 		{
@@ -85,8 +86,11 @@ MainWindow::MainWindow(QWidget* parent) :
 		}
 		else
 		{
+			palette.setColor(text.isEmpty() ? QPalette::Window : QPalette::Text, Qt::red);
 			emit inputIncomplete();
 		}
+
+		ui->lineEditSelectedDirectory->setPalette(palette);
 	});
 
 	auto emptyState = new QState();
