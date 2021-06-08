@@ -36,7 +36,9 @@ signals:
 
 private:
 	void initMenuBar();
+	void initHashCalculator();
 	void initStateMachine();
+	void processCommandLine();
 	void populateTree(const QString& directory);
 	void createFileContextMenu(const QPoint& pos);
 	void openFileWithDefaultAssociation(const QString& filePath);

@@ -21,17 +21,8 @@ MainWindow::MainWindow(QWidget* parent) :
 {
 	ui->setupUi(this);
 
-	initMenuBar();
-
-	ui->treeViewResults->setContextMenuPolicy(Qt::CustomContextMenu);
-	connect(ui->treeViewResults, &QTreeWidget::customContextMenuRequested, this, &MainWindow::createFileContextMenu);
 	ui->treeViewResults->setModel(_model);
-
-	connect(_hashCalculator, &HashCalculator::processing, this, &MainWindow::onProcessing);
-	connect(_hashCalculator, &HashCalculator::duplicateFound, _model, &ResultModel::addPath);
-	connect(_hashCalculator, &HashCalculator::duplicateFound, this, &MainWindow::onDuplicateFound);
-	connect(_hashCalculator, &HashCalculator::finished, this, &MainWindow::onFinished);
-	connect(_hashCalculator, &HashCalculator::failure, this, &MainWindow::onFailure);
+	connect(ui->treeViewResults, &QTreeWidget::customContextMenuRequested, this, &MainWindow::createFileContextMenu);
 
 	connect(ui->lineEditSelectedDirectory, &QLineEdit::textChanged, [this](const QString& text)
 	{
@@ -53,15 +44,10 @@ MainWindow::MainWindow(QWidget* parent) :
 
 	connect(ui->pushButtonDeleteSelected, &QPushButton::clicked, this, &MainWindow::deleteSelected);
 
+	initMenuBar();
+	initHashCalculator();
 	initStateMachine();
-
-	const QStringList args = QCoreApplication::arguments();
-
-	if (args.count() == 2)
-	{
-		// TODO: investigate why this does not work when called directly
-		 QTimer::singleShot(100, std::bind(&QLineEdit::setText, ui->lineEditSelectedDirectory, args[1]));
-	}
+	processCommandLine();
 }
 
 MainWindow::~MainWindow()
@@ -231,6 +217,15 @@ void MainWindow::initMenuBar()
 	ui->actionSHA_256->setChecked(true);
 }
 
+void MainWindow::initHashCalculator()
+{
+	connect(_hashCalculator, &HashCalculator::processing, this, &MainWindow::onProcessing);
+	connect(_hashCalculator, &HashCalculator::duplicateFound, _model, &ResultModel::addPath);
+	connect(_hashCalculator, &HashCalculator::duplicateFound, this, &MainWindow::onDuplicateFound);
+	connect(_hashCalculator, &HashCalculator::finished, this, &MainWindow::onFinished);
+	connect(_hashCalculator, &HashCalculator::failure, this, &MainWindow::onFailure);
+}
+
 void MainWindow::initStateMachine()
 {
 	auto emptyState = new QState();
@@ -263,6 +258,17 @@ void MainWindow::initStateMachine()
 	_machine.addState(runningState);
 	_machine.setInitialState(emptyState);
 	_machine.start();
+}
+
+void MainWindow::processCommandLine()
+{
+	const QStringList args = QCoreApplication::arguments();
+
+	if (args.count() == 2)
+	{
+		// TODO: investigate why this does not work when called directly
+		 QTimer::singleShot(100, std::bind(&QLineEdit::setText, ui->lineEditSelectedDirectory, args[1]));
+	}
 }
 
 void MainWindow::populateTree(const QString& directory)
@@ -370,7 +376,9 @@ void MainWindow::onAbout()
 	text << "Duff calculates checksums of files withing given folder."
 		"The paths of the files containing a non-unique checksum are displayed in the main view.";
 	text << "";
-	text << "Duff is open source and written in Qt (C++) see Licenses for more details.";
+	text << "Duff is open source (GPLv2) and written in C++ and uses Qt framework.";
+	text << "";
+	text << "See Licenses menu and LICENSE.md for more details.";
 	text << "";
 
 	QMessageBox::about(this, "Duff", text.join('\n'));
