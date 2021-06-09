@@ -17,7 +17,7 @@ QString reason(HashCalculator::ErrorType error)
 	switch (error)
 	{
 		case HashCalculator::ErrorType::Empty:
-			return "The file is empty";
+			return "The file appears empty";
 		case HashCalculator::ErrorType::Open:
 			return "The file could not be opened";
 		case HashCalculator::ErrorType::Read:
@@ -26,6 +26,13 @@ QString reason(HashCalculator::ErrorType error)
 
 	return "Uknown reason";
 };
+
+QPalette windowTextPalette(const QColor& color)
+{
+	static QPalette palette;
+	palette.setColor(QPalette::WindowText, color);
+	return palette;
+}
 
 MainWindow::MainWindow(QWidget* parent) :
 	QMainWindow(parent),
@@ -112,6 +119,7 @@ void MainWindow::onProcessing(const QString& filePath, qint64 bytesRead, qint64 
 			.arg(locale().formattedDataSize(bytesRead))
 			.arg(locale().formattedDataSize(bytesLeft));
 
+	ui->statusBar->setPalette(windowTextPalette(Qt::darkCyan));
 	ui->statusBar->showMessage(message);
 }
 
@@ -123,6 +131,7 @@ void MainWindow::onDuplicateFound(const QString& hashString, const QString& file
 			.arg(filePath)
 			.arg(hashString);
 
+	ui->statusBar->setPalette(windowTextPalette(Qt::darkYellow));
 	ui->statusBar->showMessage(message);
 }
 
@@ -144,6 +153,7 @@ void MainWindow::onFinished()
 			.arg(QTime::currentTime().toString())
 			.arg(ui->lineEditSelectedDirectory->text());
 
+	ui->statusBar->setPalette(windowTextPalette(Qt::darkGreen));
 	ui->statusBar->showMessage(message);
 }
 
@@ -155,8 +165,8 @@ void MainWindow::onFailure(const QString& filePath, HashCalculator::ErrorType er
 			.arg(filePath)
 			.arg(reason(error));
 
+	ui->statusBar->setPalette(windowTextPalette(Qt::red));
 	ui->statusBar->showMessage(message);
-
 	qWarning() << filePath << char(error);
 }
 
