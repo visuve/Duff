@@ -1,6 +1,5 @@
 #include "MainWindow.hpp"
 #include "ui_MainWindow.h"
-#include "HashCalculator.hpp"
 #include "ResultModel.hpp"
 
 #include <QActionGroup>
@@ -12,6 +11,21 @@
 #include <QTime>
 #include <QTimer>
 #include <QTreeWidgetItem>
+
+QString reason(HashCalculator::ErrorType error)
+{
+	switch (error)
+	{
+		case HashCalculator::ErrorType::Empty:
+			return "The file is empty";
+		case HashCalculator::ErrorType::Open:
+			return "The file could not be opened";
+		case HashCalculator::ErrorType::Read:
+			return "The file could not be read";
+	}
+
+	return "Uknown reason";
+};
 
 MainWindow::MainWindow(QWidget* parent) :
 	QMainWindow(parent),
@@ -133,16 +147,17 @@ void MainWindow::onFinished()
 	ui->statusBar->showMessage(message);
 }
 
-void MainWindow::onFailure(const QString& filePath)
+void MainWindow::onFailure(const QString& filePath, HashCalculator::ErrorType error)
 {
 	const QString message =
-		QString("%1 Failed to process %2")
+		QString("%1 Failed to process %2. Reason: %3")
 			.arg(QTime::currentTime().toString())
-			.arg(filePath);
+			.arg(filePath)
+			.arg(reason(error));
 
 	ui->statusBar->showMessage(message);
 
-	qWarning() << "Failed to process:" << filePath;
+	qWarning() << filePath << char(error);
 }
 
 void MainWindow::deleteSelected()
@@ -219,6 +234,8 @@ void MainWindow::initMenuBar()
 
 void MainWindow::initHashCalculator()
 {
+	qRegisterMetaType<HashCalculator::ErrorType>("ErrorType");
+
 	connect(_hashCalculator, &HashCalculator::processing, this, &MainWindow::onProcessing);
 	connect(_hashCalculator, &HashCalculator::duplicateFound, _model, &ResultModel::addPath);
 	connect(_hashCalculator, &HashCalculator::duplicateFound, this, &MainWindow::onDuplicateFound);

@@ -4,12 +4,13 @@
 #include <QCryptographicHash>
 #include <QStateMachine>
 
+#include "HashCalculator.hpp"
+
 namespace Ui
 {
 	class MainWindow;
 }
 
-class HashCalculator;
 class ResultModel;
 
 class MainWindow : public QMainWindow
@@ -26,7 +27,7 @@ private slots:
 	void onProcessing(const QString& filePath, qint64 bytesRead, qint64 bytesLeft);
 	void onDuplicateFound(const QString& hashString, const QString& filePath);
 	void onFinished();
-	void onFailure(const QString& filePath);
+	void onFailure(const QString& filePath, HashCalculator::ErrorType error);
 	void deleteSelected();
 	void onAbout();
 

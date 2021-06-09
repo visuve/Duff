@@ -30,13 +30,18 @@ void HashCalculator::setAlgorithm(QCryptographicHash::Algorithm algorithm)
 	_algorithm = algorithm;
 }
 
+bool HashCalculator::keepRunning() const
+{
+	return QThread::currentThread()->isInterruptionRequested() == false;
+}
+
 QByteArray HashCalculator::calculateHash(const QString& filePath)
 {
 	QFile file(filePath);
 
 	if (!file.open(QFile::ReadOnly))
 	{
-		emit failure(filePath);
+		emit failure(filePath, ErrorType::Open);
 		return {};
 	}
 
@@ -44,19 +49,19 @@ QByteArray HashCalculator::calculateHash(const QString& filePath)
 	constexpr int BufferSize = 0x10000; // 64K
 	thread_local std::array<char, BufferSize> buffer = {};
 	qint64 bytesReadTotal = 0;
-	const qint64 bytesLeft = file.size();
+	const qint64 bytesLeftTotal = file.size();
 
-	if (bytesLeft <= 0)
+	if (bytesLeftTotal <= 0)
 	{
-		emit failure(filePath);
+		emit failure(filePath, ErrorType::Empty);
 		return {};
 	}
 
-	emit processing(filePath, bytesReadTotal, bytesLeft);
+	emit processing(filePath, bytesReadTotal, bytesLeftTotal);
 
 	do
 	{
-		if (QThread::currentThread()->isInterruptionRequested())
+		if (!keepRunning())
 		{
 			return {};
 		}
@@ -65,15 +70,15 @@ QByteArray HashCalculator::calculateHash(const QString& filePath)
 
 		if (bytesRead < 0)
 		{
-			emit failure(filePath);
+			emit failure(filePath, ErrorType::Read);
 			return {};
 		}
 
 		bytesReadTotal += bytesRead;
 		hash.addData(buffer.data(), bytesRead);
-		emit processing(filePath, bytesReadTotal, bytesLeft);
+		emit processing(filePath, bytesReadTotal, bytesLeftTotal);
 	}
-	while (bytesReadTotal < bytesLeft);
+	while (bytesReadTotal < bytesLeftTotal);
 
 	return hash.result().toHex();
 }
@@ -83,7 +88,7 @@ void HashCalculator::run()
 	QDirIterator it(_directory, QDir::Files, QDirIterator::Subdirectories);
 	QMap<QString, QStringList> fileHashes;
 
-	while (!QThread::currentThread()->isInterruptionRequested() && it.hasNext())
+	while (keepRunning() && it.hasNext())
 	{
 		const QString path = QDir::toNativeSeparators(it.next());
 		const QByteArray fileHash = calculateHash(path);
