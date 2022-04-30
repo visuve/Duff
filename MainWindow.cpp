@@ -265,11 +265,13 @@ void MainWindow::initStateMachine()
 	readyState->assignProperty(ui->pushButtonFindDuplicates, "text", "Find duplicates");
 	readyState->assignProperty(ui->pushButtonFindDuplicates, "enabled", true);
 	readyState->assignProperty(ui->lineEditSelectedDirectory, "enabled", true);
+	readyState->assignProperty(ui->treeViewResults, "enabled", true);
 	readyState->setObjectName("ready");
 
 	auto runningState = new QState();
 	runningState->assignProperty(ui->pushButtonFindDuplicates, "text", "Cancel");
 	runningState->assignProperty(ui->lineEditSelectedDirectory, "enabled", false);
+	runningState->assignProperty(ui->treeViewResults, "enabled", false);
 	runningState->setObjectName("running");
 
 	emptyState->addTransition(this, &MainWindow::inputReady, readyState);
