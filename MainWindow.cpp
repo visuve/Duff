@@ -404,20 +404,21 @@ bool MainWindow::removeFile(const QString& filePath)
 
 void MainWindow::onAbout()
 {
+	const QString commitUrl = 
+		QString("<a href='https://github.com/visuve/Duff/commit/%1'>%1</a>").arg(DUFF_COMMIT_HASH);
+
+	const QString licenseUrl = 
+		QString("<a href='https://github.com/visuve/Duff/blob/%1/LICENSE.md'>LICENSE.md</a>").arg(DUFF_COMMIT_HASH);
+
 	QStringList text;
-	text << "Duff - Duplicate File Finder version " + QString(DUFF_VERSION) + '.';
-	text << "";
-	text << "Duff is yet another duplicate file finder.";
-	text << "";
-	text << "Duff calculates checksums of files withing given folder."
-		"The paths of the files containing a non-unique checksum are displayed in the main view.";
-	text << "";
-	text << "Duff is open source (GPLv2) and written in C++ and uses Qt framework.";
-	text << "";
-	text << "See Licenses menu and LICENSE.md for more details.";
-	text << "";
-	text << "Git commit hash this build is from: " + QString(DUFF_COMMIT_HASH);
-	text << "";
+	text << "<h3>Duff - Duplicate File Finder</h3>";
+	text << "<p>Version " + QString(DUFF_VERSION) + ".</p>";
+	text << "<p>Duff is yet another duplicate file finder.</p>";
+	text << "<p>Duff calculates checksums of files withing given folder. "
+		"The paths of the files containing a non-unique checksum are displayed in the main view.</p>";
+	text << "<p>Duff is open source (GPLv2) and written in C++ and uses Qt framework.</p>";
+	text << "<p>See Licenses menu and " << licenseUrl << " for more details.</p>";
+	text << "<p>Git commit hash this build is from: " << commitUrl << "</p>";
 
 	QMessageBox::about(this, "Duff", text.join('\n'));
 }
