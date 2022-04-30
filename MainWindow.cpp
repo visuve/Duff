@@ -1,6 +1,7 @@
 #include "MainWindow.hpp"
 #include "ui_MainWindow.h"
 #include "ResultModel.hpp"
+#include "DuffVersion.h"
 
 #include <QActionGroup>
 #include <QDebug>
@@ -402,7 +403,7 @@ bool MainWindow::removeFile(const QString& filePath)
 void MainWindow::onAbout()
 {
 	QStringList text;
-	text << "Duff - Duplicate File Finder version 0.2.";
+	text << "Duff - Duplicate File Finder version " + QString(DUFF_VERSION) + '.';
 	text << "";
 	text << "Duff is yet another duplicate file finder.";
 	text << "";
@@ -412,6 +413,8 @@ void MainWindow::onAbout()
 	text << "Duff is open source (GPLv2) and written in C++ and uses Qt framework.";
 	text << "";
 	text << "See Licenses menu and LICENSE.md for more details.";
+	text << "";
+	text << "Git commit hash this build is from: " + QString(DUFF_COMMIT_HASH);
 	text << "";
 
 	QMessageBox::about(this, "Duff", text.join('\n'));

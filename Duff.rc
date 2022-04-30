@@ -1,10 +1,11 @@
 #pragma code_page(65001)
 
-#include <Windows.h>
+#include "Windows.h"
+#include "DuffVersion.h"
 
 VS_VERSION_INFO VERSIONINFO
-	FILEVERSION 0,2,0,0
-	PRODUCTVERSION 0,2,0,0
+	FILEVERSION DUFF_MAJOR, DUFF_MINOR, DUFF_BUILD, 0
+	PRODUCTVERSION DUFF_MAJOR,DUFF_MINOR,DUFF_BUILD,0
 	FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
 	FILEFLAGS VS_FF_DEBUG
@@ -20,13 +21,13 @@ BEGIN
 		BLOCK "040904b0"
 		BEGIN
 			VALUE "CompanyName", "visuve"
-			VALUE "FileDescription", "Duff - Duplicate File Finder"
-			VALUE "FileVersion", "0.2.0.0"
+			VALUE "FileDescription", DUFF_COMMIT_HASH
+			VALUE "FileVersion", DUFF_VERSION_LONG
 			VALUE "InternalName", "Duff"
 			VALUE "LegalCopyright", "Copyright © visuve 2021"
 			VALUE "OriginalFilename", "Duff.exe"
-			VALUE "ProductName", "Duplicate File Finder"
-			VALUE "ProductVersion", "0.2.0.0"
+			VALUE "ProductName", "Duff - Duplicate File Finder"
+			VALUE "ProductVersion", DUFF_VERSION_LONG
 		END
 	END
 	BLOCK "VarFileInfo"

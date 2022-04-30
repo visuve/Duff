@@ -1,0 +1,33 @@
+#ifndef DUFF_VERSION_H
+#define DUFF_VERSION_H
+
+// These should come through CMake
+#ifndef DUFF_MAJOR
+#define DUFF_MAJOR 0
+#endif
+#ifndef DUFF_MINOR
+#define DUFF_MINOR 0
+#endif
+#ifndef DUFF_BUILD
+#define DUFF_BUILD 0
+#endif
+#ifndef DUFF_COMMIT_HASH
+// Default to the first commit
+#define DUFF_COMMIT_HASH "587c149ecd30885417db6322b99bfe25f7e7d807"
+#endif
+
+
+#define DUFF_STRINGIFY_INNER(x) #x
+#define DUFF_STRINGIFY_OUTER(x) DUFF_STRINGIFY_INNER(x)
+
+#define DUFF_VERSION \
+	DUFF_STRINGIFY_OUTER(DUFF_MAJOR) "." \
+	DUFF_STRINGIFY_OUTER(DUFF_MINOR) "." \
+	DUFF_STRINGIFY_OUTER(DUFF_BUILD)
+
+#define DUFF_VERSION_LONG \
+	DUFF_STRINGIFY_OUTER(DUFF_MAJOR) "." \
+	DUFF_STRINGIFY_OUTER(DUFF_MINOR) "." \
+	DUFF_STRINGIFY_OUTER(DUFF_BUILD) ".0"
+
+#endif // DUFF_VERSION_H
