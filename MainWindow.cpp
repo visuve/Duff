@@ -303,6 +303,12 @@ void MainWindow::populateTree(const QString& directory)
 	_model->clear();
 	ui->menuAlgorithm->setEnabled(false);
 	_hashCalculator->setDirectory(directory);
+
+	if (!ui->lineEditWildcards->text().isEmpty())
+	{
+		_hashCalculator->setWildcards(ui->lineEditWildcards->text());
+	}
+
 	_hashCalculator->start();
 }
 
@@ -396,7 +402,7 @@ bool MainWindow::removeFile(const QString& filePath)
 void MainWindow::onAbout()
 {
 	QStringList text;
-	text << "Duff - Duplicate File Finder version 0.1.";
+	text << "Duff - Duplicate File Finder version 0.2.";
 	text << "";
 	text << "Duff is yet another duplicate file finder.";
 	text << "";

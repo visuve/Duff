@@ -25,6 +25,18 @@ void HashCalculator::setDirectory(const QString& directory)
 	_directory = directory;
 }
 
+void HashCalculator::setWildcards(const QString& wildcards)
+{
+	if (wildcards.isEmpty())
+	{
+		_wildcards.clear();
+	}
+	else
+	{
+		_wildcards = wildcards.split('|');
+	}
+}
+
 void HashCalculator::setAlgorithm(QCryptographicHash::Algorithm algorithm)
 {
 	_algorithm = algorithm;
@@ -85,12 +97,15 @@ QByteArray HashCalculator::calculateHash(const QString& filePath)
 
 void HashCalculator::run()
 {
-	QDirIterator it(_directory, QDir::Files, QDirIterator::Subdirectories);
+	QDirIterator* it = _wildcards.empty() ?
+			new QDirIterator(_directory, QDir::Files, QDirIterator::Subdirectories) :
+			new QDirIterator(_directory, _wildcards, QDir::Files, QDirIterator::Subdirectories);
+
 	QMap<QString, QStringList> fileHashes;
 
-	while (keepRunning() && it.hasNext())
+	while (keepRunning() && it->hasNext())
 	{
-		const QString path = QDir::toNativeSeparators(it.next());
+		const QString path = QDir::toNativeSeparators(it->next());
 		const QByteArray fileHash = calculateHash(path);
 
 		if (fileHash.isEmpty())
@@ -112,4 +127,6 @@ void HashCalculator::run()
 			emit duplicateFound(fileHash, path);
 		}
 	}
+
+	delete it;
 }

@@ -21,6 +21,7 @@ public:
 
 	void setDirectory(const QString& directory);
 	void setAlgorithm(QCryptographicHash::Algorithm algorithm);
+	void setWildcards(const QString& wildcards);
 
 signals:
 	void processing(const QString& filePath, qint64 bytesRead, qint64 bytesLeft);
@@ -33,6 +34,7 @@ private:
 	void run() override;
 
 	QString _directory;
+	QStringList _wildcards;
 	QCryptographicHash::Algorithm _algorithm = QCryptographicHash::Sha256;
 };
 
