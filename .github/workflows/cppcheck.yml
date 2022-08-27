@@ -15,4 +15,4 @@ jobs:
 
     - name: Static analysis
       run: |
-        cppcheck --project=Duff.cppcheck
+        cppcheck --project=Duff.cppcheck --error-exitcode=1 --enable=warning,style
