@@ -184,7 +184,7 @@ void MainWindow::deleteSelected()
 	if (QMessageBox::question(
 			this,
 			"Confirm delete?",
-			"Are you sure you want to delete the following files:\n" + filePaths.join('\n')) !=
+			"Are you sure you want to delete the selected files?") !=
 		QMessageBox::StandardButton::Yes)
 	{
 		return;

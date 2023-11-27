@@ -18,7 +18,7 @@ if (Qt6_FOUND)
 	find_package(Qt6 COMPONENTS StateMachine REQUIRED)
 endif()
 
-file(GLOB DUFF_SOURCES "*.cpp" "*.hpp" "*.h" ".ui" "*.qrc")
+file(GLOB DUFF_SOURCES "*.cpp" "*.hpp" "*.h" "*.ui" "*.qrc")
 
 if (MSVC)
 	set(APP_ICON_RESOURCE_WINDOWS "Duff.rc")
