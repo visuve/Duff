@@ -181,10 +181,11 @@ void MainWindow::deleteSelected()
 		return;
 	}
 
-	if (QMessageBox::question(
-			this,
-			"Confirm delete?",
-			"Are you sure you want to delete the selected files?") !=
+	const QString message =
+		QString("Are you sure you want to delete the selected %1 file(s)?")
+			.arg(filePaths.size());
+
+	if (QMessageBox::question(this, "Confirm delete?", message) !=
 		QMessageBox::StandardButton::Yes)
 	{
 		return;
