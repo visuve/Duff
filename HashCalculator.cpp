@@ -113,7 +113,7 @@ void HashCalculator::run()
 			continue;
 		}
 
-		fileHashes[fileHash] << path;
+		fileHashes[fileHash].emplaceBack(path);
 		int size = fileHashes[fileHash].size();
 
 		if (size == 2)

@@ -206,6 +206,8 @@ void MainWindow::deleteSelected()
 
 		_model->removePath(filePath);
 	}
+
+	ui->treeViewResults->expandAll();
 }
 
 void MainWindow::initMenuBar()
@@ -400,6 +402,7 @@ bool MainWindow::removeFile(const QString& filePath)
 	}
 
 	_model->removePath(filePath);
+	ui->treeViewResults->expandAll();
 	return true;
 }
 
