@@ -214,6 +214,20 @@ bool ResultModel::setData(const QModelIndex& index, const QVariant& value, int r
 
 	if (role == Qt::CheckStateRole && pathCell)
 	{
+		if (value == Qt::CheckState::Checked)
+		{
+			++_selectedCount;
+		}
+		else if (value == Qt::CheckState::Unchecked)
+		{
+			--_selectedCount;
+		}
+		else
+		{
+			qDebug() << "Invalid check state value:" << value;
+			return false;
+		}
+
 		item->data(Qt::CheckStateRole) = value;
 		emit dataChanged(index, index);
 		return true;
@@ -255,6 +269,8 @@ void ResultModel::clear()
 	beginResetModel();
 	delete _root;
 	_root = new Node(nullptr, { { Qt::DisplayRole, "root" } });
+	_totalCount = 0;
+	_selectedCount = 0;
 	endResetModel();
 }
 
@@ -272,6 +288,7 @@ void ResultModel::addPath(const QString& hash, const QString& filePath)
 
 	beginInsertRows(QModelIndex(), 0, 1);
 	hashNode->appendChild({ { Qt::DisplayRole, filePath }, { Qt::CheckStateRole, false } });
+	++_totalCount;
 	endInsertRows();
 }
 
@@ -292,6 +309,16 @@ QStringList ResultModel::selectedPaths() const
 	return results;
 }
 
+int ResultModel::totalCount() const
+{
+	return _totalCount;
+}
+
+int ResultModel::selectedCount() const
+{
+	return _selectedCount;
+}
+
 void ResultModel::removePath(const QString& filePath)
 {
 	const auto pathEquals = [&](const Node* node)
@@ -307,12 +334,25 @@ void ResultModel::removePath(const QString& filePath)
 	{
 		Node* hashNode = _root->childAt(i);
 
-		auto result = hashNode->takeChildren(pathEquals);
+		for (Node* pathNode : hashNode->takeChildren(pathEquals))
+		{
+			if (pathNode->data(Qt::CheckStateRole) == Qt::CheckState::Checked)
+			{
+				--_selectedCount;
+			}
 
-		qDeleteAll(result);
+			delete pathNode;
+			--_totalCount;
+		}
 
 		if (hashNode->childCount() < 2)
 		{
+			if (hashNode->childAt(0)->data(Qt::CheckStateRole) == Qt::CheckState::Checked)
+			{
+				--_selectedCount;
+			}
+
+			--_totalCount;
 			delete _root->takeChild(i);
 		}
 	}

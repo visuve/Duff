@@ -28,6 +28,7 @@ private slots:
 	void onDuplicateFound(const QString& hashString, const QString& filePath);
 	void onFinished();
 	void onFailure(const QString& filePath, HashCalculator::ErrorType error);
+	void onDataChanged(const QModelIndex&, const QModelIndex&, const QVector<int>& roles);
 	void deleteSelected();
 	void onAbout();
 
@@ -41,6 +42,7 @@ private:
 	void initStateMachine();
 	void processCommandLine();
 	void populateTree(const QString& directory);
+	void updateSelectedLabel();
 	void createFileContextMenu(const QPoint& pos);
 	void openFileWithDefaultAssociation(const QString& filePath);
 	void openParentDirectory(const QString& filePath);

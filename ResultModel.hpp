@@ -29,9 +29,13 @@ public:
 	void clear();
 	void addPath(const QString& hash, const QString& filePath);
 	QStringList selectedPaths() const;
+	int totalCount() const;
+	int selectedCount() const;
 	void removePath(const QString& filePath);
 
 private:
-	Node* _root;
+	Node* _root = nullptr;
+	int _totalCount = 0;
+	int _selectedCount = 0;
 };
 

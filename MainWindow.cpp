@@ -66,6 +66,11 @@ MainWindow::MainWindow(QWidget* parent) :
 
 	connect(ui->pushButtonDeleteSelected, &QPushButton::clicked, this, &MainWindow::deleteSelected);
 
+	connect(_model, &QAbstractItemModel::dataChanged, this, &MainWindow::onDataChanged);
+	connect(_model, &QAbstractItemModel::modelReset, this, &MainWindow::updateSelectedLabel);
+	connect(_model, &QAbstractItemModel::rowsInserted, this, &MainWindow::updateSelectedLabel);
+	connect(_model, &QAbstractItemModel::rowsRemoved, this, &MainWindow::updateSelectedLabel);
+
 	initMenuBar();
 	initHashCalculator();
 	initStateMachine();
@@ -169,6 +174,14 @@ void MainWindow::onFailure(const QString& filePath, HashCalculator::ErrorType er
 	ui->statusBar->setPalette(windowTextPalette(Qt::red));
 	ui->statusBar->showMessage(message);
 	qWarning() << filePath << char(error);
+}
+
+void MainWindow::onDataChanged(const QModelIndex&, const QModelIndex&, const QVector<int>& roles)
+{
+	if (roles.isEmpty() || roles.contains(Qt::CheckStateRole))
+	{
+		updateSelectedLabel();
+	}
 }
 
 void MainWindow::deleteSelected()
@@ -316,6 +329,15 @@ void MainWindow::populateTree(const QString& directory)
 	}
 
 	_hashCalculator->start();
+}
+
+void MainWindow::updateSelectedLabel()
+{
+	const int selectedCount = _model->selectedCount();
+	const int totalCount = _model->totalCount();
+	const QString text = QString("%1 / %2 selected").arg(selectedCount).arg(totalCount);
+
+	ui->labelSelectedCount->setText(text);
 }
 
 void MainWindow::createFileContextMenu(const QPoint& pos)
