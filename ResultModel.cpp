@@ -40,11 +40,13 @@ public:
 		return _children.takeAt(index);
 	}
 
-	QVector<Node*> takeChildren(const std::function<bool(Node*)>& lambda)
+	QVector<Node*> takeChildren(const std::function<bool(const Node*)>& lambda)
 	{
 		QVector<Node*> result;
 
-		for (int i = 0; i < childCount(); ++i)
+		int i = childCount();
+
+		while (i--)
 		{
 			if (lambda(childAt(i)))
 			{
@@ -62,7 +64,7 @@ public:
 		return child;
 	}
 
-	QVector<Node*> findChildren(const std::function<bool(Node*)>& lambda) const
+	QVector<Node*> findChildren(const std::function<bool(const Node*)>& lambda) const
 	{
 		QVector<Node*> results;
 		QQueue<Node*> queue;
@@ -86,7 +88,7 @@ public:
 		return results;
 	}
 
-	Node* findChild(const std::function<bool(Node*)>& lambda) const
+	Node* findChild(const std::function<bool(const Node*)>& lambda) const
 	{
 		auto children = findChildren(lambda);
 		return children.isEmpty() ? nullptr : children.first();
@@ -110,6 +112,11 @@ public:
 	QVariant& data(Qt::ItemDataRole role)
 	{
 		return _data[role];
+	}
+
+	QVariant value(Qt::ItemDataRole role, const QVariant& defaultValue = QVariant()) const
+	{
+		return _data.value(role, defaultValue);
 	}
 
 private:
@@ -253,9 +260,9 @@ void ResultModel::clear()
 
 void ResultModel::addPath(const QString& hash, const QString& filePath)
 {
-	Node* hashNode = _root->findChild([&hash](Node* node)
+	Node* hashNode = _root->findChild([&hash](const Node* node)
 	{
-		return node->data(Qt::DisplayRole).toString() == hash;
+		return node->value(Qt::DisplayRole).toString() == hash;
 	});
 
 	if (!hashNode)
@@ -272,9 +279,9 @@ QStringList ResultModel::selectedPaths() const
 {
 	QStringList results;
 
-	auto isChecked = [&](Node* node)
+	auto isChecked = [&](const Node* node)
 	{
-		return node->data(Qt::CheckStateRole) == Qt::CheckState::Checked;
+		return node->value(Qt::CheckStateRole) == Qt::CheckState::Checked;
 	};
 
 	for (Node* node : _root->findChildren(isChecked))
@@ -287,14 +294,16 @@ QStringList ResultModel::selectedPaths() const
 
 void ResultModel::removePath(const QString& filePath)
 {
-	beginResetModel();
-
-	auto pathEquals = [&](Node* node)
+	const auto pathEquals = [&](const Node* node)
 	{
-		return node->data(Qt::DisplayRole).toString() == filePath;
+		return node->value(Qt::DisplayRole).toString() == filePath;
 	};
 
-	for (int i = 0; i < _root->childCount(); ++i)
+	int i = _root->childCount();
+
+	beginResetModel();
+
+	while (i--)
 	{
 		Node* hashNode = _root->childAt(i);
 
