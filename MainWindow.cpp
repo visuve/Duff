@@ -65,6 +65,7 @@ MainWindow::MainWindow(QWidget* parent) :
 	});
 
 	connect(ui->pushButtonDeleteSelected, &QPushButton::clicked, this, &MainWindow::deleteSelected);
+	connect(ui->pushButtonRefresh, &QPushButton::clicked, this, &MainWindow::onRefresh);
 
 	connect(_model, &QAbstractItemModel::dataChanged, this, &MainWindow::onDataChanged);
 	connect(_model, &QAbstractItemModel::modelReset, this, &MainWindow::updateSelectedLabel);
@@ -184,6 +185,13 @@ void MainWindow::onDataChanged(const QModelIndex&, const QModelIndex&, const QVe
 	}
 }
 
+void MainWindow::onRefresh()
+{
+	_model->removeInexistentPaths();
+	ui->treeViewResults->expandAll();
+	updateSelectedLabel();
+}
+
 void MainWindow::deleteSelected()
 {
 	const QStringList filePaths = _model->selectedPaths();
@@ -274,18 +282,25 @@ void MainWindow::initStateMachine()
 {
 	auto emptyState = new QState();
 	emptyState->assignProperty(ui->pushButtonFindDuplicates, "enabled", false);
+	emptyState->assignProperty(ui->pushButtonRefresh, "enabled", false);
+	emptyState->assignProperty(ui->pushButtonDeleteSelected, "enabled", false);
 	emptyState->assignProperty(ui->lineEditSelectedDirectory, "enabled", true);
+	emptyState->assignProperty(ui->treeViewResults, "enabled", false);
 	emptyState->setObjectName("empty");
 
 	auto readyState = new QState();
 	readyState->assignProperty(ui->pushButtonFindDuplicates, "text", "Find duplicates");
 	readyState->assignProperty(ui->pushButtonFindDuplicates, "enabled", true);
+	readyState->assignProperty(ui->pushButtonRefresh, "enabled", true);
+	readyState->assignProperty(ui->pushButtonDeleteSelected, "enabled", true);
 	readyState->assignProperty(ui->lineEditSelectedDirectory, "enabled", true);
 	readyState->assignProperty(ui->treeViewResults, "enabled", true);
 	readyState->setObjectName("ready");
 
 	auto runningState = new QState();
 	runningState->assignProperty(ui->pushButtonFindDuplicates, "text", "Cancel");
+	runningState->assignProperty(ui->pushButtonRefresh, "enabled", false);
+	runningState->assignProperty(ui->pushButtonDeleteSelected, "enabled", false);
 	runningState->assignProperty(ui->lineEditSelectedDirectory, "enabled", false);
 	runningState->assignProperty(ui->treeViewResults, "enabled", false);
 	runningState->setObjectName("running");

@@ -1,9 +1,9 @@
 #include "ResultModel.hpp"
-#include "ResultModel.hpp"
 
-#include <QApplication>
 #include <QDebug>
+#include <QFile>
 #include <QQueue>
+#include <QVector>
 
 inline Node* indexToNode(const QModelIndex& index)
 {
@@ -40,7 +40,7 @@ public:
 		return _children.takeAt(index);
 	}
 
-	QVector<Node*> takeChildren(const std::function<bool(const Node*)>& lambda)
+	QVector<Node*> takeChildren(const std::function<bool(const Node*)>& predicate)
 	{
 		QVector<Node*> result;
 
@@ -48,7 +48,7 @@ public:
 
 		while (i--)
 		{
-			if (lambda(childAt(i)))
+			if (predicate(childAt(i)))
 			{
 				result.append(takeChild(i));
 			}
@@ -319,13 +319,9 @@ int ResultModel::selectedCount() const
 	return _selectedCount;
 }
 
-void ResultModel::removePath(const QString& filePath)
-{
-	const auto pathEquals = [&](const Node* node)
-	{
-		return node->value(Qt::DisplayRole).toString() == filePath;
-	};
 
+void ResultModel::prune(const std::function<bool(const Node*)>& filter)
+{
 	int i = _root->childCount();
 
 	beginResetModel();
@@ -334,7 +330,7 @@ void ResultModel::removePath(const QString& filePath)
 	{
 		Node* hashNode = _root->childAt(i);
 
-		for (Node* pathNode : hashNode->takeChildren(pathEquals))
+		for (Node* pathNode : hashNode->takeChildren(filter))
 		{
 			if (pathNode->data(Qt::CheckStateRole) == Qt::CheckState::Checked)
 			{
@@ -358,4 +354,25 @@ void ResultModel::removePath(const QString& filePath)
 	}
 
 	endResetModel();
+}
+
+void ResultModel::removePath(const QString& filePath)
+{
+	const auto pathEquals = [&](const Node* node)
+	{
+		return node->value(Qt::DisplayRole).toString() == filePath;
+	};
+
+	return prune(pathEquals);
+}
+
+void ResultModel::removeInexistentPaths()
+{
+	const auto missing = [](const Node* node)
+	{
+		const QString filePath = node->value(Qt::DisplayRole).toString();
+		return !QFile::exists(filePath);
+	};
+
+	return prune(missing);
 }

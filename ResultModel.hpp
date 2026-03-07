@@ -1,7 +1,7 @@
 #pragma once
 
 #include <QAbstractItemModel>
-#include <QVector>
+#include <functional>
 
 class Node;
 
@@ -31,7 +31,9 @@ public:
 	QStringList selectedPaths() const;
 	int totalCount() const;
 	int selectedCount() const;
+	void prune(const std::function<bool(const Node*)>& predicate);
 	void removePath(const QString& filePath);
+	void removeInexistentPaths();
 
 private:
 	Node* _root = nullptr;

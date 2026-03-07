@@ -29,6 +29,7 @@ private slots:
 	void onFinished();
 	void onFailure(const QString& filePath, HashCalculator::ErrorType error);
 	void onDataChanged(const QModelIndex&, const QModelIndex&, const QVector<int>& roles);
+	void onRefresh();
 	void deleteSelected();
 	void onAbout();
 
