@@ -2,7 +2,6 @@
 
 #include <QDebug>
 #include <QFile>
-#include <QQueue>
 #include <QVector>
 
 inline Node* indexToNode(const QModelIndex& index)
@@ -64,33 +63,33 @@ public:
 		return child;
 	}
 
-	QVector<Node*> findChildren(const std::function<bool(const Node*)>& lambda) const
+	QVector<Node*> findChildren(const std::function<bool(const Node*)>& predicate) const
 	{
 		QVector<Node*> results;
-		QQueue<Node*> queue;
-		queue.enqueue(const_cast<Node*>(this));
+		QVector<Node*> stack;
+		stack.append(const_cast<Node*>(this));
 
-		while (!queue.empty())
+		while (!stack.isEmpty())
 		{
-			Node* node = queue.dequeue();
+			Node* node = stack.takeLast();
 
 			for (Node* child : node->_children)
 			{
-				queue.enqueue(child);
+				stack.append(child);
 			}
 
-			if (lambda(node))
+			if (predicate(node))
 			{
-				results.push_back(node);
+				results.append(node);
 			}
 		}
 
 		return results;
 	}
 
-	Node* findChild(const std::function<bool(const Node*)>& lambda) const
+	Node* findChild(const std::function<bool(const Node*)>& predicate) const
 	{
-		auto children = findChildren(lambda);
+		auto children = findChildren(predicate);
 		return children.isEmpty() ? nullptr : children.first();
 	}
 
