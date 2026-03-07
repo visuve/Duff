@@ -119,6 +119,16 @@ public:
 		return _data.value(role, defaultValue);
 	}
 
+	QString displayString() const
+	{
+		return _data.value(Qt::DisplayRole).toString();
+	}
+
+	bool isChecked() const
+	{
+		return _data.value(Qt::CheckStateRole) == Qt::CheckState::Checked;
+	}
+
 private:
 	Node* _parent;
 	QVector<Node*> _children;
@@ -296,9 +306,9 @@ QStringList ResultModel::selectedPaths() const
 {
 	QStringList results;
 
-	auto isChecked = [&](const Node* node)
+	const auto isChecked = [&](const Node* node)
 	{
-		return node->value(Qt::CheckStateRole) == Qt::CheckState::Checked;
+		return node->isChecked();
 	};
 
 	for (Node* node : _root->findChildren(isChecked))
@@ -320,7 +330,7 @@ int ResultModel::selectedCount() const
 }
 
 
-void ResultModel::prune(const std::function<bool(const Node*)>& filter)
+void ResultModel::prune(const std::function<bool(const Node*)>& predicate)
 {
 	int i = _root->childCount();
 
@@ -330,9 +340,9 @@ void ResultModel::prune(const std::function<bool(const Node*)>& filter)
 	{
 		Node* hashNode = _root->childAt(i);
 
-		for (Node* pathNode : hashNode->takeChildren(filter))
+		for (Node* pathNode : hashNode->takeChildren(predicate))
 		{
-			if (pathNode->data(Qt::CheckStateRole) == Qt::CheckState::Checked)
+			if (pathNode->isChecked())
 			{
 				--_selectedCount;
 			}
@@ -343,7 +353,7 @@ void ResultModel::prune(const std::function<bool(const Node*)>& filter)
 
 		if (hashNode->childCount() < 2)
 		{
-			if (hashNode->childAt(0)->data(Qt::CheckStateRole) == Qt::CheckState::Checked)
+			if (hashNode->childAt(0)->isChecked())
 			{
 				--_selectedCount;
 			}
@@ -360,19 +370,19 @@ void ResultModel::removePath(const QString& filePath)
 {
 	const auto pathEquals = [&](const Node* node)
 	{
-		return node->value(Qt::DisplayRole).toString() == filePath;
+		return node->displayString() == filePath;
 	};
 
-	return prune(pathEquals);
+	prune(pathEquals);
 }
 
 void ResultModel::removeInexistentPaths()
 {
 	const auto missing = [](const Node* node)
 	{
-		const QString filePath = node->value(Qt::DisplayRole).toString();
+		const QString filePath = node->displayString();
 		return !QFile::exists(filePath);
 	};
 
-	return prune(missing);
+	prune(missing);
 }
