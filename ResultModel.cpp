@@ -286,20 +286,31 @@ void ResultModel::clear()
 
 void ResultModel::addPath(const QString& hash, const QString& filePath)
 {
-	Node* hashNode = _root->findChild([&hash](const Node* node)
+	const auto hashEquals = [&](const Node* node)
 	{
-		return node->value(Qt::DisplayRole).toString() == hash;
-	});
+		return node->displayString() == hash;
+	};
+
+	Node* hashNode = _root->findChild(hashEquals);
 
 	if (!hashNode)
 	{
+		int newHashRow = _root->childCount();
+		beginInsertRows(QModelIndex(), newHashRow, newHashRow);
 		hashNode = _root->appendChild({ { Qt::DisplayRole, hash } });
+		hashNode->appendChild({ { Qt::DisplayRole, filePath }, { Qt::CheckStateRole, Qt::Unchecked } });
+		++_totalCount;
+		endInsertRows();
 	}
-
-	beginInsertRows(QModelIndex(), 0, 1);
-	hashNode->appendChild({ { Qt::DisplayRole, filePath }, { Qt::CheckStateRole, false } });
-	++_totalCount;
-	endInsertRows();
+	else
+	{
+		QModelIndex hashIndex = createIndex(hashNode->parentRow(), 0, hashNode);
+		int newPathRow = hashNode->childCount();
+		beginInsertRows(hashIndex, newPathRow, newPathRow);
+		hashNode->appendChild({ { Qt::DisplayRole, filePath }, { Qt::CheckStateRole, Qt::Unchecked } });
+		++_totalCount;
+		endInsertRows();
+	}
 }
 
 QStringList ResultModel::selectedPaths() const
@@ -313,7 +324,7 @@ QStringList ResultModel::selectedPaths() const
 
 	for (Node* node : _root->findChildren(isChecked))
 	{
-		results.append(node->data(Qt::DisplayRole).toString());
+		results.append(node->displayString());
 	}
 
 	return results;
