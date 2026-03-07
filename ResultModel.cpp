@@ -25,7 +25,7 @@ public:
 		qDebug() << _data[Qt::DisplayRole];
 	}
 
-	Node* parent() const
+	const Node* parent() const
 	{
 		return _parent;
 	}
@@ -109,14 +109,14 @@ public:
 		return !_children.isEmpty();
 	}
 
-	QVariant& data(Qt::ItemDataRole role)
-	{
-		return _data[role];
-	}
-
 	QVariant value(Qt::ItemDataRole role, const QVariant& defaultValue = QVariant()) const
 	{
 		return _data.value(role, defaultValue);
+	}
+
+	void setValue(Qt::ItemDataRole role, const QVariant& value)
+	{
+		_data[role] = value;
 	}
 
 	QString displayString() const
@@ -130,7 +130,7 @@ public:
 	}
 
 private:
-	Node* _parent;
+	const Node* _parent;
 	QVector<Node*> _children;
 	QMap<Qt::ItemDataRole, QVariant> _data;
 };
@@ -154,8 +154,8 @@ QModelIndex ResultModel::index(int row, int column, const QModelIndex& parentInd
 		return QModelIndex();
 	}
 
-	Node* parent= parentIndex.isValid() ? indexToNode(parentIndex) : _root;
-	Node* child = parent ->childAt(row);
+	const Node* parent= parentIndex.isValid() ? indexToNode(parentIndex) : _root;
+	const Node* child = parent ->childAt(row);
 	return child ? createIndex(row, column, child) : QModelIndex();
 }
 
@@ -166,7 +166,7 @@ QModelIndex ResultModel::parent(const QModelIndex& childIndex) const
 		return QModelIndex();
 	}
 
-	Node* parentNode = indexToNode(childIndex)->parent();
+	const Node* parentNode = indexToNode(childIndex)->parent();
 
 	return parentNode != _root ?
 		createIndex(parentNode->parentRow(), 0, parentNode) :
@@ -192,7 +192,7 @@ QVariant ResultModel::data(const QModelIndex& index, int role) const
 		return QVariant();
 	}
 
-	Node* item = indexToNode(index);
+	const Node* item = indexToNode(index);
 	bool topLevel = item->parent() == _root;
 	bool hashCell = index.column() == 0 && topLevel;
 	bool pathCell = index.column() == 1 && !topLevel;
@@ -201,7 +201,7 @@ QVariant ResultModel::data(const QModelIndex& index, int role) const
 	{
 		if (hashCell || pathCell)
 		{
-			return item->data(Qt::DisplayRole);
+			return item->value(Qt::DisplayRole);
 		}
 	}
 
@@ -209,7 +209,7 @@ QVariant ResultModel::data(const QModelIndex& index, int role) const
 	{
 		if (pathCell)
 		{
-			return item->data(Qt::CheckStateRole);
+			return item->value(Qt::CheckStateRole);
 		}
 	}
 
@@ -238,7 +238,7 @@ bool ResultModel::setData(const QModelIndex& index, const QVariant& value, int r
 			return false;
 		}
 
-		item->data(Qt::CheckStateRole) = value;
+		item->setValue(Qt::CheckStateRole, value);
 		emit dataChanged(index, index);
 		return true;
 	}
@@ -322,7 +322,7 @@ QStringList ResultModel::selectedPaths() const
 		return node->isChecked();
 	};
 
-	for (Node* node : _root->findChildren(isChecked))
+	for (const Node* node : _root->findChildren(isChecked))
 	{
 		results.append(node->displayString());
 	}
@@ -351,7 +351,7 @@ void ResultModel::prune(const std::function<bool(const Node*)>& predicate)
 	{
 		Node* hashNode = _root->childAt(i);
 
-		for (Node* pathNode : hashNode->takeChildren(predicate))
+		for (const Node* pathNode : hashNode->takeChildren(predicate))
 		{
 			if (pathNode->isChecked())
 			{
@@ -370,7 +370,7 @@ void ResultModel::prune(const std::function<bool(const Node*)>& predicate)
 			// Check if the hash node has a lone child
 			if (hashNode->childCount() == 1)
 			{
-				Node* lone = hashNode->childAt(0);
+				const Node* lone = hashNode->childAt(0);
 
 				if (lone->isChecked())
 				{
