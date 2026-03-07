@@ -347,18 +347,30 @@ void ResultModel::prune(const std::function<bool(const Node*)>& predicate)
 				--_selectedCount;
 			}
 
-			delete pathNode;
 			--_totalCount;
+
+			delete pathNode;
 		}
 
+		// If a hash has one of fewer instances remove it from the model
+		// The point of the application is to find duplicates
 		if (hashNode->childCount() < 2)
 		{
-			if (hashNode->childAt(0)->isChecked())
+			// Check if the hash node has a lone child
+			if (hashNode->childCount() == 1)
 			{
-				--_selectedCount;
+				Node* lone = hashNode->childAt(0);
+
+				if (lone->isChecked())
+				{
+					--_selectedCount;
+				}
+
+				--_totalCount;
 			}
 
-			--_totalCount;
+			// Delete the hash node itself
+			// Which will also delete any remaining children. see Node dtor
 			delete _root->takeChild(i);
 		}
 	}
