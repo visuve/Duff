@@ -73,10 +73,7 @@ public:
 		{
 			Node* node = stack.takeLast();
 
-			for (Node* child : node->_children)
-			{
-				stack.append(child);
-			}
+			stack.append(node->_children);
 
 			if (predicate(node))
 			{
@@ -153,9 +150,9 @@ QModelIndex ResultModel::index(int row, int column, const QModelIndex& parentInd
 		return QModelIndex();
 	}
 
-	const Node* parent= parentIndex.isValid() ? indexToNode(parentIndex) : _root;
-	const Node* child = parent ->childAt(row);
-	return child ? createIndex(row, column, child) : QModelIndex();
+	const Node* parentNode= parentIndex.isValid() ? indexToNode(parentIndex) : _root;
+	const Node* childNode = parentNode->childAt(row);
+	return childNode ? createIndex(row, column, childNode) : QModelIndex();
 }
 
 QModelIndex ResultModel::parent(const QModelIndex& childIndex) const

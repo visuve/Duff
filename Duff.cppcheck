@@ -21,4 +21,5 @@
 		<suppression>noExplicitConstructor</suppression>
 		<suppression>unusedFunction</suppression>
 	</suppressions>
+	<check-level-exhaustive/>
 </project>
